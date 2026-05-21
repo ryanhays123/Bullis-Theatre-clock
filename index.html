@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Remote Clock Control</title>
 
   <style>
@@ -243,8 +244,9 @@
       margin-top: 12px;
     }
 
+    /* VIEW PAGE - RESPONSIVE, NO OVERLAP */
     .view-page {
-      height: 100vh;
+      height: 100dvh;
       width: 100vw;
       overflow: hidden;
       display: flex;
@@ -257,86 +259,113 @@
     }
 
     .view-stage {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
+      width: 100vw;
+      height: 100dvh;
+      display: grid;
+      grid-template-rows: minmax(0, 1fr);
       align-items: center;
-      justify-content: center;
-      gap: clamp(24px, 4vh, 48px);
-      padding: clamp(24px, 5vw, 70px);
-      transition: all 0.35s ease;
+      justify-items: center;
+      padding: clamp(18px, 4vw, 60px);
       text-align: center;
+      overflow: hidden;
     }
 
     .view-stage.text-active {
-      justify-content: flex-start;
-      gap: 24px;
-      padding-top: clamp(24px, 5vh, 48px);
+      grid-template-rows: minmax(0, 42dvh) minmax(0, 1fr);
+      row-gap: clamp(12px, 2dvh, 28px);
+      padding-top: clamp(14px, 3dvh, 36px);
+      padding-bottom: clamp(14px, 3dvh, 36px);
     }
 
     .main-display {
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      max-height: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: clamp(20px, 3vh, 36px);
-      width: 100%;
-      transition: transform 0.35s ease;
+      gap: min(3dvh, 32px);
+      overflow: hidden;
     }
 
-    .view-stage.text-active .main-display {
-      transform: scale(0.68);
-      transform-origin: top center;
+    .main-display.combo {
+      gap: min(2dvh, 22px);
     }
 
     .digital-clock,
     .timer-display {
-      font-size: clamp(5rem, 16vw, 16rem);
+      font-size: min(15vw, 33dvh, 15rem);
       font-weight: 900;
-      line-height: 0.9;
+      line-height: 0.86;
       letter-spacing: -0.08em;
       text-shadow: 0 20px 60px rgba(0, 0, 0, 0.42);
+      white-space: nowrap;
     }
 
     .timer-display {
       letter-spacing: -0.07em;
     }
 
+    .combo .digital-clock {
+      font-size: min(10vw, 18dvh, 9.5rem);
+    }
+
+    .combo .timer-display {
+      font-size: min(10vw, 18dvh, 9.5rem);
+      color: #bfdbfe;
+    }
+
+    .view-stage.text-active .digital-clock,
+    .view-stage.text-active .timer-display {
+      font-size: min(10vw, 16dvh, 8.5rem);
+    }
+
+    .view-stage.text-active .combo .digital-clock,
+    .view-stage.text-active .combo .timer-display {
+      font-size: min(7.5vw, 11dvh, 6rem);
+    }
+
     .timezone-label,
     .timer-label {
-      margin-top: 18px;
-      font-size: clamp(1rem, 2vw, 1.7rem);
+      margin-top: min(2dvh, 18px);
+      font-size: min(2vw, 2.8dvh, 1.6rem);
       color: rgba(255, 255, 255, 0.65);
       letter-spacing: 0.16em;
       text-transform: uppercase;
       font-weight: 700;
-    }
-
-    .combo .digital-clock {
-      font-size: clamp(3.8rem, 10vw, 10rem);
-    }
-
-    .combo .timer-display {
-      font-size: clamp(3.8rem, 9vw, 9rem);
-      color: #bfdbfe;
+      white-space: nowrap;
     }
 
     .analog-clock {
       position: relative;
-      width: min(70vmin, 650px);
-      height: min(70vmin, 650px);
+      width: min(68vw, 68dvh, 650px);
+      height: min(68vw, 68dvh, 650px);
+      flex: 0 0 auto;
       border-radius: 50%;
-      border: clamp(8px, 1.2vw, 14px) solid rgba(255, 255, 255, 0.92);
+      border: clamp(7px, 1.1vw, 14px) solid rgba(255, 255, 255, 0.92);
       background:
         radial-gradient(circle at center, rgba(255, 255, 255, 0.12), transparent 58%),
         rgba(255, 255, 255, 0.04);
-      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45), inset 0 0 30px rgba(255, 255, 255, 0.08);
+      box-shadow:
+        0 30px 90px rgba(0, 0, 0, 0.45),
+        inset 0 0 30px rgba(255, 255, 255, 0.08);
     }
 
     .combo .analog-clock {
-      width: min(44vmin, 430px);
-      height: min(44vmin, 430px);
+      width: min(42vw, 38dvh, 410px);
+      height: min(42vw, 38dvh, 410px);
+    }
+
+    .view-stage.text-active .analog-clock {
+      width: min(34vw, 27dvh, 320px);
+      height: min(34vw, 27dvh, 320px);
+    }
+
+    .view-stage.text-active .combo .analog-clock {
+      width: min(28vw, 22dvh, 260px);
+      height: min(28vw, 22dvh, 260px);
     }
 
     .clock-number {
@@ -344,8 +373,13 @@
       left: var(--x);
       top: var(--y);
       transform: translate(-50%, -50%);
-      font-size: clamp(1.4rem, 2.4vw, 2.2rem);
+      font-size: min(3.2vw, 3.2dvh, 2.1rem);
       font-weight: 800;
+    }
+
+    .combo .clock-number,
+    .view-stage.text-active .clock-number {
+      font-size: min(2.3vw, 2.3dvh, 1.45rem);
     }
 
     .hand {
@@ -358,46 +392,48 @@
     }
 
     .hand.hour {
-      width: 12px;
+      width: max(7px, 1.5%);
       height: 27%;
-      margin-left: -6px;
+      margin-left: max(-6px, -0.75%);
     }
 
     .hand.minute {
-      width: 8px;
+      width: max(5px, 1%);
       height: 37%;
-      margin-left: -4px;
+      margin-left: max(-4px, -0.5%);
       background: #dbeafe;
     }
 
     .hand.second {
-      width: 4px;
+      width: max(3px, 0.55%);
       height: 42%;
-      margin-left: -2px;
+      margin-left: max(-2px, -0.275%);
       background: var(--red);
     }
 
     .center-dot {
       position: absolute;
-      width: 24px;
-      height: 24px;
+      width: min(5vw, 5dvh, 24px);
+      height: min(5vw, 5dvh, 24px);
       border-radius: 50%;
       left: 50%;
       top: 50%;
       transform: translate(-50%, -50%);
       background: var(--red);
-      border: 5px solid white;
+      border: min(1vw, 1dvh, 5px) solid white;
     }
 
     .message-display {
       display: none;
-      width: min(92vw, 1400px);
-      padding: clamp(22px, 4vw, 48px);
-      border-radius: 34px;
+      width: min(94vw, 1500px);
+      max-height: 52dvh;
+      overflow: auto;
+      padding: clamp(18px, 3vw, 44px);
+      border-radius: clamp(18px, 3vw, 34px);
       background: rgba(239, 68, 68, 0.16);
       border: 1px solid rgba(248, 113, 113, 0.34);
       box-shadow: 0 30px 90px rgba(0, 0, 0, 0.38);
-      font-size: clamp(3rem, 8vw, 9rem);
+      font-size: min(7vw, 8dvh, 8rem);
       font-weight: 900;
       line-height: 1.02;
       letter-spacing: -0.05em;
@@ -447,7 +483,13 @@
     };
 
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
-    import { getDatabase, ref, onValue, set, get } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+    import {
+      getDatabase,
+      ref,
+      onValue,
+      set,
+      get
+    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 
     const TIME_ZONE = "America/New_York";
 
@@ -574,6 +616,7 @@
 
     function getEastCoastDigitalTime() {
       const parts = getEastCoastParts();
+
       return `${parts.hour}:${String(parts.minute).padStart(2, "0")}:${String(parts.second).padStart(2, "0")} ${parts.dayPeriod}`;
     }
 
@@ -659,6 +702,7 @@
             <section class="grid">
               <div class="card full">
                 <h2>Room Code</h2>
+
                 <p>
                   This connects your control page to your display page. Use a private room code, like <strong>auditorium2026</strong>.
                 </p>
