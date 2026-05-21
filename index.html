@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <title>Remote Clock Control</title>
+  <title>Bullis Theatre Clock</title>
 
   <style>
     * {
@@ -15,7 +15,6 @@
 
     :root {
       --bg: #050816;
-      --panel: #10182d;
       --text: #f8fafc;
       --muted: #a9b4c7;
       --line: rgba(255, 255, 255, 0.12);
@@ -244,7 +243,7 @@
       margin-top: 12px;
     }
 
-    /* VIEW PAGE - RESPONSIVE, NO OVERLAP */
+    /* VIEW PAGE - AUTO RESIZES AND PREVENTS OVERLAP */
     .view-page {
       height: 100dvh;
       width: 100vw;
@@ -468,28 +467,25 @@
   <div id="app"></div>
 
   <script type="module">
-    /*
-      IMPORTANT:
-      Replace this firebaseConfig with the one from your Firebase project.
-    */
     const firebaseConfig = {
-      apiKey: "PASTE-YOUR-API-KEY-HERE",
-      authDomain: "PASTE-YOUR-PROJECT.firebaseapp.com",
-      databaseURL: "https://PASTE-YOUR-PROJECT-default-rtdb.firebaseio.com",
-      projectId: "PASTE-YOUR-PROJECT-ID",
-      storageBucket: "PASTE-YOUR-PROJECT.appspot.com",
-      messagingSenderId: "PASTE-YOUR-SENDER-ID",
-      appId: "PASTE-YOUR-APP-ID"
+      apiKey: "AIzaSyAK_AQTeJg3kE0BKoNo6ZFSz0P2i6sK4xc",
+      authDomain: "bullis-theatre-clock.firebaseapp.com",
+      databaseURL: "https://bullis-theatre-clock-default-rtdb.firebaseio.com/",
+      projectId: "bullis-theatre-clock",
+      storageBucket: "bullis-theatre-clock.firebasestorage.app",
+      messagingSenderId: "755170958711",
+      appId: "1:755170958711:web:0cdda9f681e33173afd572",
+      measurementId: "G-Y6FY034Q66"
     };
 
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
     import {
       getDatabase,
       ref,
       onValue,
       set,
       get
-    } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+    } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
 
     const TIME_ZONE = "America/New_York";
 
@@ -509,10 +505,6 @@
     let db;
     let roomRef;
     let currentState = { ...defaultState };
-
-    function configMissing() {
-      return !firebaseConfig.apiKey || firebaseConfig.apiKey.includes("PASTE-YOUR");
-    }
 
     function isViewPage() {
       return new URLSearchParams(window.location.search).get("view") === "1";
@@ -640,39 +632,42 @@
         .replaceAll("'", "&#039;");
     }
 
-    function renderSetupPage() {
+    function userIsTyping() {
+      const el = document.activeElement;
+
+      if (!el) {
+        return false;
+      }
+
+      const tag = el.tagName;
+
+      return (
+        tag === "TEXTAREA" ||
+        (tag === "INPUT" && !el.readOnly)
+      );
+    }
+
+    function renderErrorPage(errorMessage) {
       document.getElementById("app").innerHTML = `
         <main class="setup-page">
           <div class="wrap">
             <section class="card full">
               <h1 style="font-size: clamp(2rem, 4vw, 3.5rem); margin-bottom: 18px;">
-                Firebase Setup Needed
+                Firebase Connection Error
               </h1>
 
               <p>
-                This version can be controlled from any computer or phone, but first you need to connect it to Firebase Realtime Database.
+                The website loaded, but it could not connect to Firebase.
               </p>
 
               <br>
 
-              <p>
-                Replace the placeholder <strong>firebaseConfig</strong> values in the code with your real Firebase web app config.
-              </p>
-
-              <div class="setup-code">const firebaseConfig = {
-  apiKey: "PASTE-YOUR-API-KEY-HERE",
-  authDomain: "PASTE-YOUR-PROJECT.firebaseapp.com",
-  databaseURL: "https://PASTE-YOUR-PROJECT-default-rtdb.firebaseio.com",
-  projectId: "PASTE-YOUR-PROJECT-ID",
-  storageBucket: "PASTE-YOUR-PROJECT.appspot.com",
-  messagingSenderId: "PASTE-YOUR-SENDER-ID",
-  appId: "PASTE-YOUR-APP-ID"
-};</div>
+              <div class="setup-code">${escapeHTML(errorMessage)}</div>
 
               <br>
 
               <p>
-                After you paste the real config and upload the file again, this warning will disappear.
+                Check your Firebase Realtime Database rules and make sure read/write are allowed for testing.
               </p>
             </section>
           </div>
@@ -923,6 +918,10 @@
         });
       });
 
+      document.getElementById("messageInput").addEventListener("input", event => {
+        currentState.message = event.target.value;
+      });
+
       document.getElementById("showHideBtn").addEventListener("click", () => {
         const text = document.getElementById("messageInput").value;
 
@@ -1051,35 +1050,34 @@
     }
 
     async function startApp() {
-      if (configMissing()) {
-        renderSetupPage();
-        return;
-      }
+      try {
+        const app = initializeApp(firebaseConfig);
+        db = getDatabase(app);
+        roomRef = ref(db, `rooms/${getRoom()}/state`);
 
-      const app = initializeApp(firebaseConfig);
-      db = getDatabase(app);
-      roomRef = ref(db, `rooms/${getRoom()}/state`);
+        const snapshot = await get(roomRef);
 
-      const snapshot = await get(roomRef);
-
-      if (!snapshot.exists()) {
-        await set(roomRef, defaultState);
-      }
-
-      onValue(roomRef, snapshot => {
-        currentState = {
-          ...defaultState,
-          ...(snapshot.val() || {})
-        };
-
-        if (isViewPage()) {
-          renderViewPage();
-        } else {
-          renderControlPage();
+        if (!snapshot.exists()) {
+          await set(roomRef, defaultState);
         }
-      });
 
-      setInterval(updateViewDisplays, 250);
+        onValue(roomRef, snapshot => {
+          currentState = {
+            ...defaultState,
+            ...(snapshot.val() || {})
+          };
+
+          if (isViewPage()) {
+            renderViewPage();
+          } else if (!userIsTyping()) {
+            renderControlPage();
+          }
+        });
+
+        setInterval(updateViewDisplays, 250);
+      } catch (error) {
+        renderErrorPage(error.message || String(error));
+      }
     }
 
     startApp();
