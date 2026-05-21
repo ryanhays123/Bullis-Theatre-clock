@@ -1,8 +1,13 @@
-<!DOCTYPE html>
+from pathlib import Path
+
+code = r'''<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="mobile-web-app-capable" content="yes" />
 
   <title>Bullis Theatre Clock</title>
 
@@ -24,11 +29,13 @@
       --yellow: #facc15;
     }
 
+    html,
     body {
-      min-height: 100vh;
+      min-height: 100%;
       font-family: Arial, Helvetica, sans-serif;
       background: var(--bg);
       color: var(--text);
+      overscroll-behavior: none;
     }
 
     button,
@@ -363,19 +370,19 @@
     }
 
     .view-stage.text-short .main-display {
-      max-height: 42dvh;
+      max-height: 68dvh;
     }
 
     .view-stage.text-medium .main-display {
-      max-height: 34dvh;
+      max-height: 52dvh;
     }
 
     .view-stage.text-long .main-display {
-      max-height: 26dvh;
+      max-height: 36dvh;
     }
 
     .view-stage.text-xlong .main-display {
-      max-height: 18dvh;
+      max-height: 22dvh;
     }
 
     .digital-clock,
@@ -394,7 +401,7 @@
 
     .combo .digital-clock,
     .combo .timer-display {
-      font-size: min(13vw, 23dvh, 12.5rem);
+      font-size: min(15vw, 28dvh, 14rem);
     }
 
     .combo .timer-display {
@@ -403,17 +410,17 @@
 
     .view-stage.text-short .digital-clock,
     .view-stage.text-short .timer-display {
-      font-size: min(10.5vw, 16dvh, 9rem);
+      font-size: min(13vw, 28dvh, 13rem);
     }
 
     .view-stage.text-medium .digital-clock,
     .view-stage.text-medium .timer-display {
-      font-size: min(8.2vw, 11.5dvh, 6.7rem);
+      font-size: min(10vw, 18dvh, 9rem);
     }
 
     .view-stage.text-long .digital-clock,
     .view-stage.text-long .timer-display {
-      font-size: min(6.5vw, 8.2dvh, 5rem);
+      font-size: min(7vw, 10dvh, 5.6rem);
     }
 
     .view-stage.text-xlong .digital-clock,
@@ -423,22 +430,22 @@
 
     .view-stage.text-short .combo .digital-clock,
     .view-stage.text-short .combo .timer-display {
-      font-size: min(8.4vw, 11dvh, 6.5rem);
+      font-size: min(12vw, 22dvh, 11.5rem);
     }
 
     .view-stage.text-medium .combo .digital-clock,
     .view-stage.text-medium .combo .timer-display {
-      font-size: min(6.8vw, 8.4dvh, 5rem);
+      font-size: min(9vw, 14dvh, 7.8rem);
     }
 
     .view-stage.text-long .combo .digital-clock,
     .view-stage.text-long .combo .timer-display {
-      font-size: min(5.4vw, 6.3dvh, 4rem);
+      font-size: min(6vw, 7.8dvh, 4.8rem);
     }
 
     .view-stage.text-xlong .combo .digital-clock,
     .view-stage.text-xlong .combo .timer-display {
-      font-size: min(4.2vw, 5dvh, 3rem);
+      font-size: min(4.4vw, 5.3dvh, 3.2rem);
     }
 
     .timezone-label,
@@ -476,23 +483,23 @@
     }
 
     .combo .analog-clock {
-      width: min(48vw, 46dvh, 500px);
-      height: min(48vw, 46dvh, 500px);
+      width: min(54vw, 50dvh, 540px);
+      height: min(54vw, 50dvh, 540px);
     }
 
     .view-stage.text-short .analog-clock {
-      width: min(34vw, 28dvh, 330px);
-      height: min(34vw, 28dvh, 330px);
+      width: min(44vw, 42dvh, 430px);
+      height: min(44vw, 42dvh, 430px);
     }
 
     .view-stage.text-medium .analog-clock {
-      width: min(28vw, 22dvh, 265px);
-      height: min(28vw, 22dvh, 265px);
+      width: min(32vw, 28dvh, 320px);
+      height: min(32vw, 28dvh, 320px);
     }
 
     .view-stage.text-long .analog-clock {
-      width: min(21vw, 16dvh, 205px);
-      height: min(21vw, 16dvh, 205px);
+      width: min(22vw, 17dvh, 210px);
+      height: min(22vw, 17dvh, 210px);
     }
 
     .view-stage.text-xlong .analog-clock {
@@ -501,23 +508,23 @@
     }
 
     .view-stage.text-short .combo .analog-clock {
-      width: min(26vw, 22dvh, 250px);
-      height: min(26vw, 22dvh, 250px);
+      width: min(40vw, 36dvh, 390px);
+      height: min(40vw, 36dvh, 390px);
     }
 
     .view-stage.text-medium .combo .analog-clock {
-      width: min(21vw, 16dvh, 190px);
-      height: min(21vw, 16dvh, 190px);
+      width: min(28vw, 24dvh, 270px);
+      height: min(28vw, 24dvh, 270px);
     }
 
     .view-stage.text-long .combo .analog-clock {
-      width: min(16vw, 12dvh, 145px);
-      height: min(16vw, 12dvh, 145px);
+      width: min(18vw, 13dvh, 165px);
+      height: min(18vw, 13dvh, 165px);
     }
 
     .view-stage.text-xlong .combo .analog-clock {
-      width: min(13vw, 10dvh, 120px);
-      height: min(13vw, 10dvh, 120px);
+      width: min(13vw, 9dvh, 120px);
+      height: min(13vw, 9dvh, 120px);
     }
 
     .clock-number {
@@ -605,27 +612,27 @@
     }
 
     .view-stage.text-short .message-display {
-      min-height: clamp(130px, 18dvh, 230px);
-      max-height: 40dvh;
-      font-size: min(8.8vw, 10dvh, 8.5rem);
+      min-height: clamp(110px, 15dvh, 190px);
+      max-height: 28dvh;
+      font-size: min(8vw, 9dvh, 7.5rem);
     }
 
     .view-stage.text-medium .message-display {
-      min-height: clamp(210px, 32dvh, 390px);
-      max-height: 55dvh;
-      font-size: min(6.6vw, 7.8dvh, 6.8rem);
+      min-height: clamp(180px, 28dvh, 330px);
+      max-height: 44dvh;
+      font-size: min(6.4vw, 7.2dvh, 6.3rem);
     }
 
     .view-stage.text-long .message-display {
-      min-height: clamp(340px, 54dvh, 640px);
-      max-height: 70dvh;
-      font-size: min(4.8vw, 5.8dvh, 5rem);
+      min-height: clamp(320px, 52dvh, 620px);
+      max-height: 68dvh;
+      font-size: min(4.6vw, 5.3dvh, 4.7rem);
     }
 
     .view-stage.text-xlong .message-display {
       min-height: clamp(470px, 70dvh, 820px);
       max-height: 82dvh;
-      font-size: min(3.5vw, 4.2dvh, 3.7rem);
+      font-size: min(3.4vw, 4dvh, 3.5rem);
       line-height: 1.08;
     }
 
@@ -984,12 +991,27 @@
 
     function getTextSizeClass(message) {
       const text = String(message || "").trim();
-      const words = text ? text.split(/\s+/).length : 0;
-      const chars = text.length;
 
-      if (words <= 2 && chars <= 18) return "text-short";
-      if (words <= 8 && chars <= 55) return "text-medium";
-      if (words <= 20 && chars <= 150) return "text-long";
+      if (!text) {
+        return "text-short";
+      }
+
+      const words = text.split(/\s+/).length;
+      const chars = text.length;
+      const manualLines = text.split(/\n/).length;
+
+      if (manualLines <= 1 && words <= 5 && chars <= 45) {
+        return "text-short";
+      }
+
+      if (manualLines <= 2 && words <= 14 && chars <= 95) {
+        return "text-medium";
+      }
+
+      if (manualLines <= 4 && words <= 34 && chars <= 220) {
+        return "text-long";
+      }
+
       return "text-xlong";
     }
 
@@ -1148,12 +1170,25 @@
     }
 
     async function requestViewerFullscreen() {
+      const element = document.documentElement;
+
       try {
-        if (!document.fullscreenElement) {
-          await document.documentElement.requestFullscreen();
+        if (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
+          return;
         }
+
+        if (element.requestFullscreen) {
+          await element.requestFullscreen();
+        } else if (element.webkitRequestFullscreen) {
+          element.webkitRequestFullscreen();
+        } else if (element.msRequestFullscreen) {
+          element.msRequestFullscreen();
+        }
+
+        window.scrollTo(0, 1);
       } catch (error) {
         console.warn("Fullscreen request failed:", error);
+        window.scrollTo(0, 1);
       }
     }
 
@@ -1715,7 +1750,15 @@
       document.body.classList.toggle("fullscreen-active", !!document.fullscreenElement);
     });
 
+    document.addEventListener("webkitfullscreenchange", () => {
+      document.body.classList.toggle("fullscreen-active", !!document.webkitFullscreenElement);
+    });
+
     startApp();
   </script>
 </body>
 </html>
+'''
+
+Path("/mnt/data/bullis_theatre_clock_final_finished.html").write_text(code, encoding="utf-8")
+print("/mnt/data/bullis_theatre_clock_final_finished.html")
