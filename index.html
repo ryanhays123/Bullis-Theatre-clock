@@ -1,13 +1,8 @@
-from pathlib import Path
-
-code = r'''<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <title>Bullis Theatre Clock</title>
 
@@ -1170,25 +1165,12 @@ code = r'''<!DOCTYPE html>
     }
 
     async function requestViewerFullscreen() {
-      const element = document.documentElement;
-
       try {
-        if (document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement) {
-          return;
+        if (!document.fullscreenElement) {
+          await document.documentElement.requestFullscreen();
         }
-
-        if (element.requestFullscreen) {
-          await element.requestFullscreen();
-        } else if (element.webkitRequestFullscreen) {
-          element.webkitRequestFullscreen();
-        } else if (element.msRequestFullscreen) {
-          element.msRequestFullscreen();
-        }
-
-        window.scrollTo(0, 1);
       } catch (error) {
         console.warn("Fullscreen request failed:", error);
-        window.scrollTo(0, 1);
       }
     }
 
@@ -1750,15 +1732,8 @@ code = r'''<!DOCTYPE html>
       document.body.classList.toggle("fullscreen-active", !!document.fullscreenElement);
     });
 
-    document.addEventListener("webkitfullscreenchange", () => {
-      document.body.classList.toggle("fullscreen-active", !!document.webkitFullscreenElement);
-    });
 
     startApp();
   </script>
 </body>
 </html>
-'''
-
-Path("/mnt/data/bullis_theatre_clock_final_finished.html").write_text(code, encoding="utf-8")
-print("/mnt/data/bullis_theatre_clock_final_finished.html")
