@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Clock Control and View</title>
+  <title>Remote Clock Control</title>
+
   <style>
     * {
       box-sizing: border-box;
@@ -29,7 +30,9 @@
       color: var(--text);
     }
 
-    button, input, textarea {
+    button,
+    input,
+    textarea {
       font: inherit;
     }
 
@@ -38,7 +41,8 @@
       border: none;
     }
 
-    .control-page {
+    .control-page,
+    .setup-page {
       min-height: 100vh;
       padding: 36px;
       background:
@@ -47,12 +51,12 @@
         var(--bg);
     }
 
-    .control-wrap {
+    .wrap {
       max-width: 1150px;
       margin: 0 auto;
     }
 
-    .control-header {
+    .header {
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -60,16 +64,16 @@
       margin-bottom: 28px;
     }
 
-    .control-header h1 {
+    .header h1 {
       font-size: clamp(2rem, 4vw, 3.6rem);
       line-height: 1;
       letter-spacing: -0.04em;
     }
 
-    .control-header p {
+    .header p {
       color: var(--muted);
       margin-top: 10px;
-      max-width: 700px;
+      max-width: 750px;
       font-size: 1rem;
     }
 
@@ -106,6 +110,11 @@
     .card h2 {
       font-size: 1.3rem;
       margin-bottom: 14px;
+    }
+
+    .card p {
+      color: var(--muted);
+      line-height: 1.6;
     }
 
     .option-group {
@@ -153,7 +162,9 @@
       font-size: 0.92rem;
     }
 
-    input[type="number"], input[type="text"], textarea {
+    input[type="number"],
+    input[type="text"],
+    textarea {
       width: 100%;
       border: 1px solid var(--line);
       border-radius: 14px;
@@ -167,6 +178,11 @@
       resize: vertical;
       min-height: 115px;
       font-size: 1.05rem;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(59, 130, 246, 0.8);
     }
 
     .button-row {
@@ -216,6 +232,17 @@
       background: var(--green);
     }
 
+    .setup-code {
+      white-space: pre-wrap;
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid var(--line);
+      padding: 16px;
+      border-radius: 16px;
+      color: #dbeafe;
+      overflow-x: auto;
+      margin-top: 12px;
+    }
+
     .view-page {
       height: 100vh;
       width: 100vw;
@@ -263,15 +290,21 @@
       transform-origin: top center;
     }
 
-    .digital-clock {
-      font-size: clamp(5rem, 17vw, 17rem);
+    .digital-clock,
+    .timer-display {
+      font-size: clamp(5rem, 16vw, 16rem);
       font-weight: 900;
       line-height: 0.9;
       letter-spacing: -0.08em;
       text-shadow: 0 20px 60px rgba(0, 0, 0, 0.42);
     }
 
-    .timezone-label {
+    .timer-display {
+      letter-spacing: -0.07em;
+    }
+
+    .timezone-label,
+    .timer-label {
       margin-top: 18px;
       font-size: clamp(1rem, 2vw, 1.7rem);
       color: rgba(255, 255, 255, 0.65);
@@ -280,37 +313,19 @@
       font-weight: 700;
     }
 
-    .timer-display {
-      font-size: clamp(5rem, 16vw, 16rem);
-      font-weight: 900;
-      line-height: 0.9;
-      letter-spacing: -0.07em;
-      color: white;
-      text-shadow: 0 20px 60px rgba(0, 0, 0, 0.42);
-    }
-
-    .timer-label {
-      font-size: clamp(1rem, 2vw, 1.6rem);
-      color: rgba(255, 255, 255, 0.65);
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      font-weight: 700;
-      margin-top: 14px;
-    }
-
     .combo .digital-clock {
-      font-size: clamp(3.8rem, 11vw, 11rem);
+      font-size: clamp(3.8rem, 10vw, 10rem);
     }
 
     .combo .timer-display {
-      font-size: clamp(3.8rem, 10vw, 10rem);
+      font-size: clamp(3.8rem, 9vw, 9rem);
       color: #bfdbfe;
     }
 
     .analog-clock {
       position: relative;
-      width: min(66vw, 66vh, 620px);
-      height: min(66vw, 66vh, 620px);
+      width: min(70vmin, 650px);
+      height: min(70vmin, 650px);
       border-radius: 50%;
       border: clamp(8px, 1.2vw, 14px) solid rgba(255, 255, 255, 0.92);
       background:
@@ -320,21 +335,15 @@
     }
 
     .combo .analog-clock {
-      width: min(44vw, 44vh, 430px);
-      height: min(44vw, 44vh, 430px);
+      width: min(44vmin, 430px);
+      height: min(44vmin, 430px);
     }
 
     .clock-number {
       position: absolute;
-      left: 50%;
-      top: 50%;
-      width: 44px;
-      height: 44px;
-      margin-left: -22px;
-      margin-top: -22px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      left: var(--x);
+      top: var(--y);
+      transform: translate(-50%, -50%);
       font-size: clamp(1.4rem, 2.4vw, 2.2rem);
       font-weight: 800;
     }
@@ -401,26 +410,45 @@
     }
 
     @media (max-width: 850px) {
-      .control-page {
+      .control-page,
+      .setup-page {
         padding: 22px;
       }
 
-      .control-header {
+      .header {
         flex-direction: column;
         align-items: flex-start;
       }
 
-      .grid, .form-row {
+      .grid,
+      .form-row {
         grid-template-columns: 1fr;
       }
     }
   </style>
 </head>
+
 <body>
   <div id="app"></div>
 
-  <script>
-    const STORAGE_KEY = "east_coast_clock_control_view_state_v1";
+  <script type="module">
+    /*
+      IMPORTANT:
+      Replace this firebaseConfig with the one from your Firebase project.
+    */
+    const firebaseConfig = {
+      apiKey: "PASTE-YOUR-API-KEY-HERE",
+      authDomain: "PASTE-YOUR-PROJECT.firebaseapp.com",
+      databaseURL: "https://PASTE-YOUR-PROJECT-default-rtdb.firebaseio.com",
+      projectId: "PASTE-YOUR-PROJECT-ID",
+      storageBucket: "PASTE-YOUR-PROJECT.appspot.com",
+      messagingSenderId: "PASTE-YOUR-SENDER-ID",
+      appId: "PASTE-YOUR-APP-ID"
+    };
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+    import { getDatabase, ref, onValue, set, get } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+
     const TIME_ZONE = "America/New_York";
 
     const defaultState = {
@@ -432,51 +460,95 @@
       timerStartedAt: null,
       timerPausedElapsed: 0,
       message: "",
-      messageVisible: false
+      messageVisible: false,
+      lastUpdated: Date.now()
     };
 
-    function getState() {
-      try {
-        return { ...defaultState, ...JSON.parse(localStorage.getItem(STORAGE_KEY)) };
-      } catch (error) {
-        return { ...defaultState };
+    let db;
+    let roomRef;
+    let currentState = { ...defaultState };
+
+    function configMissing() {
+      return !firebaseConfig.apiKey || firebaseConfig.apiKey.includes("PASTE-YOUR");
+    }
+
+    function isViewPage() {
+      return new URLSearchParams(window.location.search).get("view") === "1";
+    }
+
+    function getRoom() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("room") || localStorage.getItem("remote_clock_room") || "main";
+    }
+
+    function setRoom(room) {
+      const clean = room.trim().replace(/[^a-zA-Z0-9_-]/g, "-") || "main";
+      localStorage.setItem("remote_clock_room", clean);
+
+      const params = new URLSearchParams(window.location.search);
+      params.set("room", clean);
+
+      if (isViewPage()) {
+        params.set("view", "1");
       }
+
+      window.location.search = params.toString();
     }
 
-    function setState(nextState) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
-      window.dispatchEvent(new Event("local-state-change"));
+    function getViewURL() {
+      const url = new URL(window.location.href);
+      url.searchParams.set("view", "1");
+      url.searchParams.set("room", getRoom());
+      return url.toString();
     }
 
-    function updateState(patch) {
-      setState({ ...getState(), ...patch });
+    function getControlURL() {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("view");
+      url.searchParams.set("room", getRoom());
+      return url.toString();
+    }
+
+    async function saveState(patch) {
+      currentState = {
+        ...currentState,
+        ...patch,
+        lastUpdated: Date.now()
+      };
+
+      await set(roomRef, currentState);
     }
 
     function formatTimer(totalSeconds) {
-      const sign = totalSeconds < 0 ? "-" : "";
       const abs = Math.abs(Math.floor(totalSeconds));
       const hours = Math.floor(abs / 3600);
       const minutes = Math.floor((abs % 3600) / 60);
       const seconds = abs % 60;
 
       if (hours > 0) {
-        return `${sign}${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+        return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
       }
 
-      return `${sign}${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+      return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
     }
 
     function getElapsedSeconds(state) {
-      const baseElapsed = state.timerPausedElapsed || 0;
-      if (!state.timerRunning || !state.timerStartedAt) return baseElapsed;
-      return baseElapsed + Math.floor((Date.now() - state.timerStartedAt) / 1000);
+      const paused = state.timerPausedElapsed || 0;
+
+      if (!state.timerRunning || !state.timerStartedAt) {
+        return paused;
+      }
+
+      return paused + Math.floor((Date.now() - state.timerStartedAt) / 1000);
     }
 
     function getTimerSeconds(state) {
       const elapsed = getElapsedSeconds(state);
+
       if (state.timerType === "countdown") {
         return Math.max(0, state.countdownSeconds - elapsed);
       }
+
       return elapsed;
     }
 
@@ -508,34 +580,115 @@
     function getEastCoastAngles() {
       const parts = getEastCoastParts();
       const hour12 = parts.hour % 12;
-      const hourAngle = (hour12 * 30) + (parts.minute * 0.5) + (parts.second * (0.5 / 60));
-      const minuteAngle = (parts.minute * 6) + (parts.second * 0.1);
-      const secondAngle = parts.second * 6;
 
-      return { hourAngle, minuteAngle, secondAngle };
+      return {
+        hourAngle: hour12 * 30 + parts.minute * 0.5 + parts.second * (0.5 / 60),
+        minuteAngle: parts.minute * 6 + parts.second * 0.1,
+        secondAngle: parts.second * 6
+      };
+    }
+
+    function escapeHTML(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function renderSetupPage() {
+      document.getElementById("app").innerHTML = `
+        <main class="setup-page">
+          <div class="wrap">
+            <section class="card full">
+              <h1 style="font-size: clamp(2rem, 4vw, 3.5rem); margin-bottom: 18px;">
+                Firebase Setup Needed
+              </h1>
+
+              <p>
+                This version can be controlled from any computer or phone, but first you need to connect it to Firebase Realtime Database.
+              </p>
+
+              <br>
+
+              <p>
+                Replace the placeholder <strong>firebaseConfig</strong> values in the code with your real Firebase web app config.
+              </p>
+
+              <div class="setup-code">const firebaseConfig = {
+  apiKey: "PASTE-YOUR-API-KEY-HERE",
+  authDomain: "PASTE-YOUR-PROJECT.firebaseapp.com",
+  databaseURL: "https://PASTE-YOUR-PROJECT-default-rtdb.firebaseio.com",
+  projectId: "PASTE-YOUR-PROJECT-ID",
+  storageBucket: "PASTE-YOUR-PROJECT.appspot.com",
+  messagingSenderId: "PASTE-YOUR-SENDER-ID",
+  appId: "PASTE-YOUR-APP-ID"
+};</div>
+
+              <br>
+
+              <p>
+                After you paste the real config and upload the file again, this warning will disappear.
+              </p>
+            </section>
+          </div>
+        </main>
+      `;
     }
 
     function renderControlPage() {
-      const app = document.getElementById("app");
-      const state = getState();
-      const viewURL = `${window.location.pathname}?view=1`;
-      const countdownMinutes = Math.floor(state.countdownSeconds / 60);
-      const countdownSeconds = state.countdownSeconds % 60;
+      const state = currentState;
+      const countdownMinutes = Math.floor((state.countdownSeconds || 0) / 60);
+      const countdownSeconds = (state.countdownSeconds || 0) % 60;
 
-      app.innerHTML = `
+      document.getElementById("app").innerHTML = `
         <main class="control-page">
-          <div class="control-wrap">
-            <header class="control-header">
+          <div class="wrap">
+            <header class="header">
               <div>
-                <h1>Clock Display Control</h1>
-                <p>Use this page to control the screen. Open the view page in another tab, window, projector, or display. The clocks are set to East Coast time, New York.</p>
+                <h1>Remote Clock Control</h1>
+                <p>
+                  Control the auditorium display from any computer or phone. Make sure the control page and view page use the same room code.
+                </p>
               </div>
-              <a class="open-view" href="${viewURL}" target="_blank">Open View Page</a>
+
+              <a class="open-view" href="${getViewURL()}" target="_blank">Open View Page</a>
             </header>
 
             <section class="grid">
+              <div class="card full">
+                <h2>Room Code</h2>
+                <p>
+                  This connects your control page to your display page. Use a private room code, like <strong>auditorium2026</strong>.
+                </p>
+
+                <div class="form-row">
+                  <label class="small-label">
+                    Room Code
+                    <input id="roomInput" type="text" value="${escapeHTML(getRoom())}">
+                  </label>
+
+                  <label class="small-label">
+                    Control Link
+                    <input type="text" value="${escapeHTML(getControlURL())}" readonly>
+                  </label>
+
+                  <label class="small-label">
+                    View Link
+                    <input type="text" value="${escapeHTML(getViewURL())}" readonly>
+                  </label>
+                </div>
+
+                <div class="button-row">
+                  <button class="btn" id="setRoomBtn">Use This Room</button>
+                  <button class="btn secondary" id="copyViewBtn">Copy View Link</button>
+                </div>
+              </div>
+
               <div class="card">
                 <h2>1. Choose Clock Type</h2>
+
                 <div class="option-group">
                   <label class="radio-card">
                     <input type="radio" name="clockType" value="digital" ${state.clockType === "digital" ? "checked" : ""}>
@@ -549,7 +702,7 @@
                     <input type="radio" name="clockType" value="analog" ${state.clockType === "analog" ? "checked" : ""}>
                     <div>
                       <strong>Full Screen Analog Clock</strong>
-                      <span>Classic clock face using New York / East Coast time.</span>
+                      <span>Classic analog clock using New York / East Coast time.</span>
                     </div>
                   </label>
                 </div>
@@ -557,6 +710,7 @@
 
               <div class="card">
                 <h2>2. Choose Display Mode</h2>
+
                 <div class="option-group">
                   <label class="radio-card">
                     <input type="radio" name="displayMode" value="clock" ${state.displayMode === "clock" ? "checked" : ""}>
@@ -569,8 +723,8 @@
                   <label class="radio-card">
                     <input type="radio" name="displayMode" value="combo" ${state.displayMode === "combo" ? "checked" : ""}>
                     <div>
-                      <strong>Clock + Count Up / Count Down</strong>
-                      <span>Shows the selected clock with the timer below it.</span>
+                      <strong>Clock + Timer</strong>
+                      <span>Shows the selected clock with count up or count down below it.</span>
                     </div>
                   </label>
 
@@ -586,6 +740,7 @@
 
               <div class="card">
                 <h2>3. Timer Settings</h2>
+
                 <div class="option-group">
                   <label class="radio-card">
                     <input type="radio" name="timerType" value="countdown" ${state.timerType === "countdown" ? "checked" : ""}>
@@ -609,13 +764,15 @@
                     Minutes
                     <input id="minutesInput" type="number" min="0" value="${countdownMinutes}">
                   </label>
+
                   <label class="small-label">
                     Seconds
                     <input id="secondsInput" type="number" min="0" max="59" value="${countdownSeconds}">
                   </label>
+
                   <label class="small-label">
                     Current Timer
-                    <input type="text" value="${formatTimer(getTimerSeconds(state))}" readonly>
+                    <input id="currentTimerInput" type="text" value="${formatTimer(getTimerSeconds(state))}" readonly>
                   </label>
                 </div>
 
@@ -628,106 +785,114 @@
 
               <div class="card">
                 <h2>4. Screen Text</h2>
+
                 <textarea id="messageInput" placeholder="Type words to show on the view screen...">${state.message || ""}</textarea>
 
                 <div class="button-row">
                   <button class="btn ${state.messageVisible ? "green" : "red"}" id="showHideBtn">
                     ${state.messageVisible ? "Hide" : "Show"}
                   </button>
+
                   <button class="btn secondary" id="clearTextBtn">Clear Text</button>
                 </div>
 
                 <div class="status-pill">
                   <span class="status-dot"></span>
-                  <span>${state.messageVisible ? "Text is showing. The clock/timer will shrink and move higher." : "Text is hidden. The clock/timer is full screen."}</span>
+                  <span>
+                    ${state.messageVisible ? "Text is showing. The clock or timer will shrink and move higher." : "Text is hidden. The clock or timer is full screen."}
+                  </span>
                 </div>
-              </div>
-
-              <div class="card full">
-                <h2>How to Use</h2>
-                <p style="color: var(--muted); max-width: 900px;">
-                  Save this file as <strong>index.html</strong>. Open the normal page as the control page. Click <strong>Open View Page</strong> to open the audience/projector page. Changes you make here update the view page automatically as long as both pages are open in the same browser.
-                </p>
               </div>
             </section>
           </div>
         </main>
       `;
 
+      attachControlEvents();
+    }
+
+    function attachControlEvents() {
+      document.getElementById("setRoomBtn").addEventListener("click", () => {
+        setRoom(document.getElementById("roomInput").value);
+      });
+
+      document.getElementById("copyViewBtn").addEventListener("click", async () => {
+        await navigator.clipboard.writeText(getViewURL());
+        alert("View link copied.");
+      });
+
       document.querySelectorAll('input[name="clockType"]').forEach(input => {
-        input.addEventListener("change", () => updateState({ clockType: input.value }));
+        input.addEventListener("change", () => {
+          saveState({ clockType: input.value });
+        });
       });
 
       document.querySelectorAll('input[name="displayMode"]').forEach(input => {
-        input.addEventListener("change", () => updateState({ displayMode: input.value }));
+        input.addEventListener("change", () => {
+          saveState({ displayMode: input.value });
+        });
       });
 
       document.querySelectorAll('input[name="timerType"]').forEach(input => {
         input.addEventListener("change", () => {
-          updateState({
+          saveState({
             timerType: input.value,
             timerRunning: false,
             timerPausedElapsed: 0,
             timerStartedAt: null
           });
-          renderControlPage();
         });
       });
 
       document.getElementById("applyTimeBtn").addEventListener("click", () => {
         const minutes = Math.max(0, Number(document.getElementById("minutesInput").value) || 0);
         const seconds = Math.min(59, Math.max(0, Number(document.getElementById("secondsInput").value) || 0));
-        updateState({
+
+        saveState({
           countdownSeconds: minutes * 60 + seconds,
           timerRunning: false,
           timerPausedElapsed: 0,
           timerStartedAt: null
         });
-        renderControlPage();
       });
 
       document.getElementById("startPauseBtn").addEventListener("click", () => {
-        const current = getState();
-        if (current.timerRunning) {
-          updateState({
+        if (currentState.timerRunning) {
+          saveState({
             timerRunning: false,
-            timerPausedElapsed: getElapsedSeconds(current),
+            timerPausedElapsed: getElapsedSeconds(currentState),
             timerStartedAt: null
           });
         } else {
-          updateState({
+          saveState({
             timerRunning: true,
             timerStartedAt: Date.now()
           });
         }
-        renderControlPage();
       });
 
       document.getElementById("resetBtn").addEventListener("click", () => {
-        updateState({
+        saveState({
           timerRunning: false,
           timerPausedElapsed: 0,
           timerStartedAt: null
         });
-        renderControlPage();
-      });
-
-      document.getElementById("messageInput").addEventListener("input", event => {
-        updateState({ message: event.target.value });
       });
 
       document.getElementById("showHideBtn").addEventListener("click", () => {
-        const current = getState();
-        updateState({
-          messageVisible: !current.messageVisible,
-          message: document.getElementById("messageInput").value
+        const text = document.getElementById("messageInput").value;
+
+        saveState({
+          message: text,
+          messageVisible: !currentState.messageVisible
         });
-        renderControlPage();
       });
 
       document.getElementById("clearTextBtn").addEventListener("click", () => {
-        updateState({ message: "", messageVisible: false });
-        renderControlPage();
+        saveState({
+          message: "",
+          messageVisible: false
+        });
       });
     }
 
@@ -735,10 +900,10 @@
       const numbers = Array.from({ length: 12 }, (_, index) => {
         const number = index + 1;
         const angle = number * 30;
-        const radius = 42;
-        const x = Math.sin(angle * Math.PI / 180) * radius;
-        const y = -Math.cos(angle * Math.PI / 180) * radius;
-        return `<div class="clock-number" style="transform: translate(${x}vmin, ${y}vmin);">${number}</div>`;
+        const x = 50 + Math.sin(angle * Math.PI / 180) * 40;
+        const y = 50 - Math.cos(angle * Math.PI / 180) * 40;
+
+        return `<div class="clock-number" style="--x:${x}%; --y:${y}%;">${number}</div>`;
       }).join("");
 
       return `
@@ -750,6 +915,7 @@
             <div class="hand second" id="secondHand"></div>
             <div class="center-dot"></div>
           </div>
+
           <div class="timezone-label">New York Time</div>
         </div>
       `;
@@ -778,9 +944,9 @@
     }
 
     function renderViewPage() {
-      const app = document.getElementById("app");
-      const state = getState();
-      const hasVisibleMessage = state.messageVisible && state.message.trim().length > 0;
+      const state = currentState;
+      const hasVisibleMessage = state.messageVisible && String(state.message || "").trim().length > 0;
+
       let mainHTML = "";
       let modeClass = "";
 
@@ -793,13 +959,14 @@
         mainHTML = createClockHTML(state) + createTimerHTML(state);
       }
 
-      app.innerHTML = `
+      document.getElementById("app").innerHTML = `
         <main class="view-page">
           <section class="view-stage ${hasVisibleMessage ? "text-active" : ""}">
             <div class="main-display ${modeClass}">
               ${mainHTML}
             </div>
-            <div class="message-display">${escapeHTML(state.message)}</div>
+
+            <div class="message-display">${escapeHTML(state.message || "")}</div>
           </section>
         </main>
       `;
@@ -808,9 +975,8 @@
     }
 
     function updateViewDisplays() {
-      const state = getState();
-
       const digitalClock = document.getElementById("digitalClock");
+
       if (digitalClock) {
         digitalClock.textContent = getEastCoastDigitalTime();
       }
@@ -818,47 +984,61 @@
       const hourHand = document.getElementById("hourHand");
       const minuteHand = document.getElementById("minuteHand");
       const secondHand = document.getElementById("secondHand");
+
       if (hourHand && minuteHand && secondHand) {
         const angles = getEastCoastAngles();
+
         hourHand.style.transform = `rotate(${angles.hourAngle}deg)`;
         minuteHand.style.transform = `rotate(${angles.minuteAngle}deg)`;
         secondHand.style.transform = `rotate(${angles.secondAngle}deg)`;
       }
 
       const timerDisplay = document.getElementById("timerDisplay");
+
       if (timerDisplay) {
-        timerDisplay.textContent = formatTimer(getTimerSeconds(state));
+        timerDisplay.textContent = formatTimer(getTimerSeconds(currentState));
+      }
+
+      const currentTimerInput = document.getElementById("currentTimerInput");
+
+      if (currentTimerInput) {
+        currentTimerInput.value = formatTimer(getTimerSeconds(currentState));
       }
     }
 
-    function escapeHTML(value) {
-      return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
-    }
+    async function startApp() {
+      if (configMissing()) {
+        renderSetupPage();
+        return;
+      }
 
-    function isViewPage() {
-      return new URLSearchParams(window.location.search).get("view") === "1";
-    }
+      const app = initializeApp(firebaseConfig);
+      db = getDatabase(app);
+      roomRef = ref(db, `rooms/${getRoom()}/state`);
 
-    if (isViewPage()) {
-      renderViewPage();
-      setInterval(updateViewDisplays, 250);
+      const snapshot = await get(roomRef);
 
-      window.addEventListener("storage", event => {
-        if (event.key === STORAGE_KEY) renderViewPage();
+      if (!snapshot.exists()) {
+        await set(roomRef, defaultState);
+      }
+
+      onValue(roomRef, snapshot => {
+        currentState = {
+          ...defaultState,
+          ...(snapshot.val() || {})
+        };
+
+        if (isViewPage()) {
+          renderViewPage();
+        } else {
+          renderControlPage();
+        }
       });
 
-      window.addEventListener("local-state-change", renderViewPage);
-    } else {
-      renderControlPage();
-      setInterval(() => {
-        if (!isViewPage()) renderControlPage();
-      }, 1000);
+      setInterval(updateViewDisplays, 250);
     }
+
+    startApp();
   </script>
 </body>
 </html>
