@@ -1,4 +1,6 @@
-<!DOCTYPE html>
+from pathlib import Path
+
+code = r'''<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -7,11 +9,7 @@
   <title>Bullis Theatre Clock</title>
 
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
       --bg: #050816;
@@ -21,6 +19,7 @@
       --blue: #3b82f6;
       --red: #ef4444;
       --green: #22c55e;
+      --yellow: #facc15;
     }
 
     body {
@@ -30,18 +29,11 @@
       color: var(--text);
     }
 
-    button,
-    input,
-    textarea {
-      font: inherit;
-    }
-
-    button {
-      cursor: pointer;
-      border: none;
-    }
+    button, input, textarea { font: inherit; }
+    button { cursor: pointer; border: none; }
 
     .control-page,
+    .login-page,
     .setup-page {
       min-height: 100vh;
       padding: 36px;
@@ -51,9 +43,15 @@
         var(--bg);
     }
 
-    .wrap {
-      max-width: 1150px;
+    .wrap { max-width: 1150px; margin: 0 auto; }
+
+    .login-wrap {
+      max-width: 520px;
       margin: 0 auto;
+      min-height: calc(100vh - 72px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .header {
@@ -103,24 +101,11 @@
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
     }
 
-    .card.full {
-      grid-column: 1 / -1;
-    }
+    .card.full { grid-column: 1 / -1; }
+    .card h2 { font-size: 1.3rem; margin-bottom: 14px; }
+    .card p { color: var(--muted); line-height: 1.6; }
 
-    .card h2 {
-      font-size: 1.3rem;
-      margin-bottom: 14px;
-    }
-
-    .card p {
-      color: var(--muted);
-      line-height: 1.6;
-    }
-
-    .option-group {
-      display: grid;
-      gap: 12px;
-    }
+    .option-group { display: grid; gap: 12px; }
 
     .radio-card {
       display: flex;
@@ -132,21 +117,14 @@
       border: 1px solid var(--line);
     }
 
-    .radio-card input {
-      width: 18px;
-      height: 18px;
+    .radio-card.disabled {
+      opacity: 0.65;
+      pointer-events: none;
     }
 
-    .radio-card strong {
-      display: block;
-      margin-bottom: 2px;
-    }
-
-    .radio-card span {
-      display: block;
-      color: var(--muted);
-      font-size: 0.92rem;
-    }
+    .radio-card input { width: 18px; height: 18px; }
+    .radio-card strong { display: block; margin-bottom: 2px; }
+    .radio-card span { display: block; color: var(--muted); font-size: 0.92rem; }
 
     .form-row {
       display: grid;
@@ -164,6 +142,7 @@
 
     input[type="number"],
     input[type="text"],
+    input[type="password"],
     textarea {
       width: 100%;
       border: 1px solid var(--line);
@@ -174,16 +153,19 @@
       outline: none;
     }
 
+    input:disabled,
+    textarea:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
     textarea {
       resize: vertical;
       min-height: 115px;
       font-size: 1.05rem;
     }
 
-    input:focus,
-    textarea:focus {
-      border-color: rgba(59, 130, 246, 0.8);
-    }
+    input:focus, textarea:focus { border-color: rgba(59, 130, 246, 0.8); }
 
     .button-row {
       display: flex;
@@ -205,14 +187,11 @@
       border: 1px solid var(--line);
     }
 
-    .btn.red {
-      background: var(--red);
-    }
+    .btn.red { background: var(--red); }
+    .btn.green { background: var(--green); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
-    .btn.green {
-      background: var(--green);
-    }
-
+    .role-pill,
     .status-pill {
       display: inline-flex;
       align-items: center;
@@ -225,6 +204,12 @@
       font-size: 0.9rem;
     }
 
+    .role-pill {
+      margin-top: 0;
+      color: white;
+      border: 1px solid var(--line);
+    }
+
     .status-dot {
       width: 9px;
       height: 9px;
@@ -232,18 +217,26 @@
       background: var(--green);
     }
 
-    .setup-code {
-      white-space: pre-wrap;
-      background: rgba(0, 0, 0, 0.28);
-      border: 1px solid var(--line);
-      padding: 16px;
+    .warning {
+      background: rgba(250, 204, 21, 0.12);
+      border: 1px solid rgba(250, 204, 21, 0.3);
+      color: #fde68a;
+      padding: 12px 14px;
       border-radius: 16px;
-      color: #dbeafe;
-      overflow-x: auto;
-      margin-top: 12px;
+      margin-top: 14px;
+      line-height: 1.45;
     }
 
-    /* VIEW PAGE - AUTO RESIZES AND PREVENTS OVERLAP */
+    .error-text {
+      color: #fecaca;
+      background: rgba(239, 68, 68, 0.13);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      padding: 12px 14px;
+      border-radius: 16px;
+      margin-top: 14px;
+      display: none;
+    }
+
     .view-page {
       height: 100dvh;
       width: 100vw;
@@ -260,42 +253,46 @@
     .view-stage {
       width: 100vw;
       height: 100dvh;
-      display: grid;
-      grid-template-rows: minmax(0, 1fr);
+      display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-items: center;
-      padding: clamp(18px, 4vw, 60px);
+      justify-content: center;
+      padding: clamp(16px, 3vw, 50px);
       text-align: center;
       overflow: hidden;
+      gap: clamp(14px, 2dvh, 28px);
     }
 
     .view-stage.text-active {
-      grid-template-rows: minmax(0, 42dvh) minmax(0, 1fr);
-      row-gap: clamp(12px, 2dvh, 28px);
-      padding-top: clamp(14px, 3dvh, 36px);
-      padding-bottom: clamp(14px, 3dvh, 36px);
+      justify-content: flex-start;
+      padding-top: clamp(14px, 2dvh, 28px);
+      padding-bottom: clamp(14px, 2dvh, 28px);
+      gap: clamp(12px, 2dvh, 22px);
     }
 
     .main-display {
       width: 100%;
-      height: 100%;
-      min-height: 0;
       max-height: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: min(3dvh, 32px);
-      overflow: hidden;
+      gap: min(2.5dvh, 28px);
+      overflow: visible;
+      flex-shrink: 1;
     }
 
-    .main-display.combo {
-      gap: min(2dvh, 22px);
+    .view-stage.text-active .main-display {
+      height: auto;
+      max-height: 32dvh;
+      flex-shrink: 0;
     }
+
+    .main-display.combo { gap: min(1.5dvh, 16px); }
 
     .digital-clock,
     .timer-display {
-      font-size: min(15vw, 33dvh, 15rem);
+      font-size: min(15vw, 34dvh, 15rem);
       font-weight: 900;
       line-height: 0.86;
       letter-spacing: -0.08em;
@@ -303,33 +300,29 @@
       white-space: nowrap;
     }
 
-    .timer-display {
-      letter-spacing: -0.07em;
-    }
+    .timer-display { letter-spacing: -0.07em; }
 
-    .combo .digital-clock {
-      font-size: min(10vw, 18dvh, 9.5rem);
-    }
-
+    .combo .digital-clock,
     .combo .timer-display {
-      font-size: min(10vw, 18dvh, 9.5rem);
-      color: #bfdbfe;
+      font-size: min(9vw, 16dvh, 9rem);
     }
+
+    .combo .timer-display { color: #bfdbfe; }
 
     .view-stage.text-active .digital-clock,
     .view-stage.text-active .timer-display {
-      font-size: min(10vw, 16dvh, 8.5rem);
+      font-size: min(9vw, 13dvh, 7.5rem);
     }
 
     .view-stage.text-active .combo .digital-clock,
     .view-stage.text-active .combo .timer-display {
-      font-size: min(7.5vw, 11dvh, 6rem);
+      font-size: min(6.8vw, 9dvh, 5.5rem);
     }
 
     .timezone-label,
     .timer-label {
-      margin-top: min(2dvh, 18px);
-      font-size: min(2vw, 2.8dvh, 1.6rem);
+      margin-top: min(1.3dvh, 12px);
+      font-size: min(1.8vw, 2.2dvh, 1.35rem);
       color: rgba(255, 255, 255, 0.65);
       letter-spacing: 0.16em;
       text-transform: uppercase;
@@ -339,8 +332,8 @@
 
     .analog-clock {
       position: relative;
-      width: min(68vw, 68dvh, 650px);
-      height: min(68vw, 68dvh, 650px);
+      width: min(70vw, 70dvh, 650px);
+      height: min(70vw, 70dvh, 650px);
       flex: 0 0 auto;
       border-radius: 50%;
       border: clamp(7px, 1.1vw, 14px) solid rgba(255, 255, 255, 0.92);
@@ -353,18 +346,18 @@
     }
 
     .combo .analog-clock {
-      width: min(42vw, 38dvh, 410px);
-      height: min(42vw, 38dvh, 410px);
+      width: min(40vw, 35dvh, 390px);
+      height: min(40vw, 35dvh, 390px);
     }
 
     .view-stage.text-active .analog-clock {
-      width: min(34vw, 27dvh, 320px);
-      height: min(34vw, 27dvh, 320px);
+      width: min(30vw, 24dvh, 280px);
+      height: min(30vw, 24dvh, 280px);
     }
 
     .view-stage.text-active .combo .analog-clock {
-      width: min(28vw, 22dvh, 260px);
-      height: min(28vw, 22dvh, 260px);
+      width: min(24vw, 18dvh, 220px);
+      height: min(24vw, 18dvh, 220px);
     }
 
     .clock-number {
@@ -372,13 +365,13 @@
       left: var(--x);
       top: var(--y);
       transform: translate(-50%, -50%);
-      font-size: min(3.2vw, 3.2dvh, 2.1rem);
+      font-size: min(3vw, 3dvh, 2rem);
       font-weight: 800;
     }
 
     .combo .clock-number,
     .view-stage.text-active .clock-number {
-      font-size: min(2.3vw, 2.3dvh, 1.45rem);
+      font-size: min(2vw, 2dvh, 1.35rem);
     }
 
     .hand {
@@ -390,25 +383,9 @@
       background: white;
     }
 
-    .hand.hour {
-      width: max(7px, 1.5%);
-      height: 27%;
-      margin-left: max(-6px, -0.75%);
-    }
-
-    .hand.minute {
-      width: max(5px, 1%);
-      height: 37%;
-      margin-left: max(-4px, -0.5%);
-      background: #dbeafe;
-    }
-
-    .hand.second {
-      width: max(3px, 0.55%);
-      height: 42%;
-      margin-left: max(-2px, -0.275%);
-      background: var(--red);
-    }
+    .hand.hour { width: max(7px, 1.5%); height: 27%; margin-left: max(-6px, -0.75%); }
+    .hand.minute { width: max(5px, 1%); height: 37%; margin-left: max(-4px, -0.5%); background: #dbeafe; }
+    .hand.second { width: max(3px, 0.55%); height: 42%; margin-left: max(-2px, -0.275%); background: var(--red); }
 
     .center-dot {
       position: absolute;
@@ -425,40 +402,30 @@
     .message-display {
       display: none;
       width: min(94vw, 1500px);
-      max-height: 52dvh;
+      flex: 1;
+      min-height: 0;
       overflow: auto;
       padding: clamp(18px, 3vw, 44px);
       border-radius: clamp(18px, 3vw, 34px);
       background: rgba(239, 68, 68, 0.16);
       border: 1px solid rgba(248, 113, 113, 0.34);
       box-shadow: 0 30px 90px rgba(0, 0, 0, 0.38);
-      font-size: min(7vw, 8dvh, 8rem);
+      font-size: min(8vw, 10dvh, 9rem);
       font-weight: 900;
       line-height: 1.02;
       letter-spacing: -0.05em;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
+      align-items: center;
+      justify-content: center;
     }
 
-    .view-stage.text-active .message-display {
-      display: block;
-    }
+    .view-stage.text-active .message-display { display: flex; }
 
     @media (max-width: 850px) {
-      .control-page,
-      .setup-page {
-        padding: 22px;
-      }
-
-      .header {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
-      .grid,
-      .form-row {
-        grid-template-columns: 1fr;
-      }
+      .control-page, .setup-page, .login-page { padding: 22px; }
+      .header { flex-direction: column; align-items: flex-start; }
+      .grid, .form-row { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -478,14 +445,18 @@
       measurementId: "G-Y6FY034Q66"
     };
 
+    const ADMIN_UID = "6LDVBsAORQN9mbngZfLyRkUznQr2";
+    const VIEWER_UID = "Sci1OaYwGNQnoigEPL3tp3HMxMv2";
+    const USER_DOMAIN = "bullis-theatre-clock.local";
+
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+    import { getDatabase, ref, onValue, set, get } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
     import {
-      getDatabase,
-      ref,
-      onValue,
-      set,
-      get
-    } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+      getAuth,
+      onAuthStateChanged,
+      signInWithEmailAndPassword,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
 
     const TIME_ZONE = "America/New_York";
 
@@ -502,8 +473,12 @@
       lastUpdated: Date.now()
     };
 
+    let app;
     let db;
+    let auth;
     let roomRef;
+    let unsubscribeRoom = null;
+    let currentUser = null;
     let currentState = { ...defaultState };
 
     function isViewPage() {
@@ -521,11 +496,7 @@
 
       const params = new URLSearchParams(window.location.search);
       params.set("room", clean);
-
-      if (isViewPage()) {
-        params.set("view", "1");
-      }
-
+      if (isViewPage()) params.set("view", "1");
       window.location.search = params.toString();
     }
 
@@ -543,7 +514,29 @@
       return url.toString();
     }
 
+    function getRole() {
+      if (!currentUser) return "none";
+      if (currentUser.uid === ADMIN_UID) return "admin";
+      if (currentUser.uid === VIEWER_UID) return "viewer";
+      return "unauthorized";
+    }
+
+    function canWrite() {
+      return getRole() === "admin";
+    }
+
+    function usernameToEmail(username) {
+      const clean = String(username || "").trim().toLowerCase();
+      if (clean.includes("@")) return clean;
+      return `${clean}@${USER_DOMAIN}`;
+    }
+
     async function saveState(patch) {
+      if (!canWrite()) {
+        alert("Viewer access only. Log in as admin to change settings.");
+        return;
+      }
+
       currentState = {
         ...currentState,
         ...patch,
@@ -568,21 +561,15 @@
 
     function getElapsedSeconds(state) {
       const paused = state.timerPausedElapsed || 0;
-
-      if (!state.timerRunning || !state.timerStartedAt) {
-        return paused;
-      }
-
+      if (!state.timerRunning || !state.timerStartedAt) return paused;
       return paused + Math.floor((Date.now() - state.timerStartedAt) / 1000);
     }
 
     function getTimerSeconds(state) {
       const elapsed = getElapsedSeconds(state);
-
       if (state.timerType === "countdown") {
         return Math.max(0, state.countdownSeconds - elapsed);
       }
-
       return elapsed;
     }
 
@@ -608,14 +595,12 @@
 
     function getEastCoastDigitalTime() {
       const parts = getEastCoastParts();
-
       return `${parts.hour}:${String(parts.minute).padStart(2, "0")}:${String(parts.second).padStart(2, "0")} ${parts.dayPeriod}`;
     }
 
     function getEastCoastAngles() {
       const parts = getEastCoastParts();
       const hour12 = parts.hour % 12;
-
       return {
         hourAngle: hour12 * 30 + parts.minute * 0.5 + parts.second * (0.5 / 60),
         minuteAngle: parts.minute * 6 + parts.second * 0.1,
@@ -634,17 +619,83 @@
 
     function userIsTyping() {
       const el = document.activeElement;
-
-      if (!el) {
-        return false;
-      }
-
+      if (!el) return false;
       const tag = el.tagName;
+      return tag === "TEXTAREA" || (tag === "INPUT" && !el.readOnly);
+    }
 
-      return (
-        tag === "TEXTAREA" ||
-        (tag === "INPUT" && !el.readOnly)
-      );
+    function renderLoginPage(message = "") {
+      document.getElementById("app").innerHTML = `
+        <main class="login-page">
+          <div class="login-wrap">
+            <section class="card full" style="width: 100%;">
+              <h1 style="font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1; letter-spacing: -0.04em; margin-bottom: 14px;">
+                Bullis Theatre Clock
+              </h1>
+
+              <p>Log in to view or control the clock display.</p>
+
+              <div class="form-row" style="grid-template-columns: 1fr; margin-top: 22px;">
+                <label class="small-label">
+                  Username
+                  <input id="loginUsername" type="text" placeholder="admin or viewer" autocomplete="username">
+                </label>
+
+                <label class="small-label">
+                  Password
+                  <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password">
+                </label>
+              </div>
+
+              <div class="button-row">
+                <button class="btn green" id="loginBtn">Log In</button>
+              </div>
+
+              <div class="warning">
+                Use <strong>admin</strong> for full control or <strong>viewer</strong> for view-only access.
+              </div>
+
+              <div class="error-text" id="loginError" style="${message ? "display:block;" : ""}">
+                ${escapeHTML(message)}
+              </div>
+            </section>
+          </div>
+        </main>
+      `;
+
+      document.getElementById("loginBtn").addEventListener("click", handleLogin);
+      document.getElementById("loginPassword").addEventListener("keydown", event => {
+        if (event.key === "Enter") handleLogin();
+      });
+    }
+
+    async function handleLogin() {
+      const username = document.getElementById("loginUsername").value;
+      const password = document.getElementById("loginPassword").value;
+      const email = usernameToEmail(username);
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (error) {
+        renderLoginPage("Login failed. Check the username and password.");
+      }
+    }
+
+    function renderUnauthorizedPage() {
+      document.getElementById("app").innerHTML = `
+        <main class="login-page">
+          <div class="login-wrap">
+            <section class="card full">
+              <h1 style="font-size: clamp(2rem, 5vw, 3.4rem); margin-bottom: 14px;">Not Authorized</h1>
+              <p>This account is not allowed to use this clock system.</p>
+              <div class="button-row">
+                <button class="btn red" id="logoutBtn">Log Out</button>
+              </div>
+            </section>
+          </div>
+        </main>
+      `;
+      document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
     }
 
     function renderErrorPage(errorMessage) {
@@ -655,20 +706,9 @@
               <h1 style="font-size: clamp(2rem, 4vw, 3.5rem); margin-bottom: 18px;">
                 Firebase Connection Error
               </h1>
-
-              <p>
-                The website loaded, but it could not connect to Firebase.
-              </p>
-
+              <p>The website loaded, but it could not connect to Firebase.</p>
               <br>
-
-              <div class="setup-code">${escapeHTML(errorMessage)}</div>
-
-              <br>
-
-              <p>
-                Check your Firebase Realtime Database rules and make sure read/write are allowed for testing.
-              </p>
+              <div class="warning">${escapeHTML(errorMessage)}</div>
             </section>
           </div>
         </main>
@@ -679,6 +719,9 @@
       const state = currentState;
       const countdownMinutes = Math.floor((state.countdownSeconds || 0) / 60);
       const countdownSeconds = (state.countdownSeconds || 0) % 60;
+      const admin = canWrite();
+      const disabled = admin ? "" : "disabled";
+      const disabledClass = admin ? "" : "disabled";
 
       document.getElementById("app").innerHTML = `
         <main class="control-page">
@@ -687,20 +730,29 @@
               <div>
                 <h1>Remote Clock Control</h1>
                 <p>
-                  Control the auditorium display from any computer or phone. Make sure the control page and view page use the same room code.
+                  Control or view the auditorium display. Admin can change settings. Viewer can only view settings and the display.
                 </p>
               </div>
 
-              <a class="open-view" href="${getViewURL()}" target="_blank">Open View Page</a>
+              <div>
+                <a class="open-view" href="${getViewURL()}" target="_blank">Open View Page</a>
+                <div class="button-row" style="justify-content: flex-end;">
+                  <span class="role-pill">${getRole().toUpperCase()} MODE</span>
+                  <button class="btn red" id="logoutBtn">Log Out</button>
+                </div>
+              </div>
             </header>
+
+            ${admin ? "" : `
+              <div class="warning" style="margin-bottom: 20px;">
+                Viewer mode is read-only. Log in as admin to change the clock, timer, or screen text.
+              </div>
+            `}
 
             <section class="grid">
               <div class="card full">
                 <h2>Room Code</h2>
-
-                <p>
-                  This connects your control page to your display page. Use a private room code, like <strong>auditorium2026</strong>.
-                </p>
+                <p>This connects your control page to your display page. Use the same room on both pages.</p>
 
                 <div class="form-row">
                   <label class="small-label">
@@ -727,18 +779,17 @@
 
               <div class="card">
                 <h2>1. Choose Clock Type</h2>
-
                 <div class="option-group">
-                  <label class="radio-card">
-                    <input type="radio" name="clockType" value="digital" ${state.clockType === "digital" ? "checked" : ""}>
+                  <label class="radio-card ${disabledClass}">
+                    <input type="radio" name="clockType" value="digital" ${state.clockType === "digital" ? "checked" : ""} ${disabled}>
                     <div>
                       <strong>Full Screen Digital Clock</strong>
                       <span>Large digital clock using New York / East Coast time.</span>
                     </div>
                   </label>
 
-                  <label class="radio-card">
-                    <input type="radio" name="clockType" value="analog" ${state.clockType === "analog" ? "checked" : ""}>
+                  <label class="radio-card ${disabledClass}">
+                    <input type="radio" name="clockType" value="analog" ${state.clockType === "analog" ? "checked" : ""} ${disabled}>
                     <div>
                       <strong>Full Screen Analog Clock</strong>
                       <span>Classic analog clock using New York / East Coast time.</span>
@@ -749,26 +800,25 @@
 
               <div class="card">
                 <h2>2. Choose Display Mode</h2>
-
                 <div class="option-group">
-                  <label class="radio-card">
-                    <input type="radio" name="displayMode" value="clock" ${state.displayMode === "clock" ? "checked" : ""}>
+                  <label class="radio-card ${disabledClass}">
+                    <input type="radio" name="displayMode" value="clock" ${state.displayMode === "clock" ? "checked" : ""} ${disabled}>
                     <div>
                       <strong>Clock Only</strong>
                       <span>Shows the selected clock full screen.</span>
                     </div>
                   </label>
 
-                  <label class="radio-card">
-                    <input type="radio" name="displayMode" value="combo" ${state.displayMode === "combo" ? "checked" : ""}>
+                  <label class="radio-card ${disabledClass}">
+                    <input type="radio" name="displayMode" value="combo" ${state.displayMode === "combo" ? "checked" : ""} ${disabled}>
                     <div>
                       <strong>Clock + Timer</strong>
                       <span>Shows the selected clock with count up or count down below it.</span>
                     </div>
                   </label>
 
-                  <label class="radio-card">
-                    <input type="radio" name="displayMode" value="timer" ${state.displayMode === "timer" ? "checked" : ""}>
+                  <label class="radio-card ${disabledClass}">
+                    <input type="radio" name="displayMode" value="timer" ${state.displayMode === "timer" ? "checked" : ""} ${disabled}>
                     <div>
                       <strong>Timer Only</strong>
                       <span>Shows count up or count down full screen.</span>
@@ -779,18 +829,17 @@
 
               <div class="card">
                 <h2>3. Timer Settings</h2>
-
                 <div class="option-group">
-                  <label class="radio-card">
-                    <input type="radio" name="timerType" value="countdown" ${state.timerType === "countdown" ? "checked" : ""}>
+                  <label class="radio-card ${disabledClass}">
+                    <input type="radio" name="timerType" value="countdown" ${state.timerType === "countdown" ? "checked" : ""} ${disabled}>
                     <div>
                       <strong>Count Down</strong>
                       <span>Counts down from the time you choose.</span>
                     </div>
                   </label>
 
-                  <label class="radio-card">
-                    <input type="radio" name="timerType" value="countup" ${state.timerType === "countup" ? "checked" : ""}>
+                  <label class="radio-card ${disabledClass}">
+                    <input type="radio" name="timerType" value="countup" ${state.timerType === "countup" ? "checked" : ""} ${disabled}>
                     <div>
                       <strong>Count Up</strong>
                       <span>Counts up from zero.</span>
@@ -801,12 +850,12 @@
                 <div class="form-row">
                   <label class="small-label">
                     Minutes
-                    <input id="minutesInput" type="number" min="0" value="${countdownMinutes}">
+                    <input id="minutesInput" type="number" min="0" value="${countdownMinutes}" ${disabled}>
                   </label>
 
                   <label class="small-label">
                     Seconds
-                    <input id="secondsInput" type="number" min="0" max="59" value="${countdownSeconds}">
+                    <input id="secondsInput" type="number" min="0" max="59" value="${countdownSeconds}" ${disabled}>
                   </label>
 
                   <label class="small-label">
@@ -816,23 +865,23 @@
                 </div>
 
                 <div class="button-row">
-                  <button class="btn" id="applyTimeBtn">Apply Time</button>
-                  <button class="btn green" id="startPauseBtn">${state.timerRunning ? "Pause" : "Start"}</button>
-                  <button class="btn secondary" id="resetBtn">Reset</button>
+                  <button class="btn" id="applyTimeBtn" ${disabled}>Apply Time</button>
+                  <button class="btn green" id="startPauseBtn" ${disabled}>${state.timerRunning ? "Pause" : "Start"}</button>
+                  <button class="btn secondary" id="resetBtn" ${disabled}>Reset</button>
                 </div>
               </div>
 
               <div class="card">
                 <h2>4. Screen Text</h2>
 
-                <textarea id="messageInput" placeholder="Type words to show on the view screen...">${state.message || ""}</textarea>
+                <textarea id="messageInput" placeholder="Type words to show on the view screen..." ${disabled}>${state.message || ""}</textarea>
 
                 <div class="button-row">
-                  <button class="btn ${state.messageVisible ? "green" : "red"}" id="showHideBtn">
+                  <button class="btn ${state.messageVisible ? "green" : "red"}" id="showHideBtn" ${disabled}>
                     ${state.messageVisible ? "Hide" : "Show"}
                   </button>
 
-                  <button class="btn secondary" id="clearTextBtn">Clear Text</button>
+                  <button class="btn secondary" id="clearTextBtn" ${disabled}>Clear Text</button>
                 </div>
 
                 <div class="status-pill">
@@ -851,6 +900,8 @@
     }
 
     function attachControlEvents() {
+      document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
+
       document.getElementById("setRoomBtn").addEventListener("click", () => {
         setRoom(document.getElementById("roomInput").value);
       });
@@ -860,16 +911,14 @@
         alert("View link copied.");
       });
 
+      if (!canWrite()) return;
+
       document.querySelectorAll('input[name="clockType"]').forEach(input => {
-        input.addEventListener("change", () => {
-          saveState({ clockType: input.value });
-        });
+        input.addEventListener("change", () => saveState({ clockType: input.value }));
       });
 
       document.querySelectorAll('input[name="displayMode"]').forEach(input => {
-        input.addEventListener("change", () => {
-          saveState({ displayMode: input.value });
-        });
+        input.addEventListener("change", () => saveState({ displayMode: input.value }));
       });
 
       document.querySelectorAll('input[name="timerType"]').forEach(input => {
@@ -945,7 +994,6 @@
         const angle = number * 30;
         const x = 50 + Math.sin(angle * Math.PI / 180) * 40;
         const y = 50 - Math.cos(angle * Math.PI / 180) * 40;
-
         return `<div class="clock-number" style="--x:${x}%; --y:${y}%;">${number}</div>`;
       }).join("");
 
@@ -958,16 +1006,13 @@
             <div class="hand second" id="secondHand"></div>
             <div class="center-dot"></div>
           </div>
-
           <div class="timezone-label">New York Time</div>
         </div>
       `;
     }
 
     function createClockHTML(state) {
-      if (state.clockType === "analog") {
-        return createAnalogClock();
-      }
+      if (state.clockType === "analog") return createAnalogClock();
 
       return `
         <div>
@@ -1008,7 +1053,6 @@
             <div class="main-display ${modeClass}">
               ${mainHTML}
             </div>
-
             <div class="message-display">${escapeHTML(state.message || "")}</div>
           </section>
         </main>
@@ -1019,10 +1063,7 @@
 
     function updateViewDisplays() {
       const digitalClock = document.getElementById("digitalClock");
-
-      if (digitalClock) {
-        digitalClock.textContent = getEastCoastDigitalTime();
-      }
+      if (digitalClock) digitalClock.textContent = getEastCoastDigitalTime();
 
       const hourHand = document.getElementById("hourHand");
       const minuteHand = document.getElementById("minuteHand");
@@ -1030,48 +1071,59 @@
 
       if (hourHand && minuteHand && secondHand) {
         const angles = getEastCoastAngles();
-
         hourHand.style.transform = `rotate(${angles.hourAngle}deg)`;
         minuteHand.style.transform = `rotate(${angles.minuteAngle}deg)`;
         secondHand.style.transform = `rotate(${angles.secondAngle}deg)`;
       }
 
       const timerDisplay = document.getElementById("timerDisplay");
-
-      if (timerDisplay) {
-        timerDisplay.textContent = formatTimer(getTimerSeconds(currentState));
-      }
+      if (timerDisplay) timerDisplay.textContent = formatTimer(getTimerSeconds(currentState));
 
       const currentTimerInput = document.getElementById("currentTimerInput");
+      if (currentTimerInput) currentTimerInput.value = formatTimer(getTimerSeconds(currentState));
+    }
 
-      if (currentTimerInput) {
-        currentTimerInput.value = formatTimer(getTimerSeconds(currentState));
+    async function connectRoom() {
+      if (unsubscribeRoom) unsubscribeRoom();
+
+      roomRef = ref(db, `rooms/${getRoom()}/state`);
+
+      const snapshot = await get(roomRef);
+      if (!snapshot.exists() && canWrite()) {
+        await set(roomRef, defaultState);
       }
+
+      unsubscribeRoom = onValue(roomRef, snapshot => {
+        currentState = { ...defaultState, ...(snapshot.val() || {}) };
+
+        if (isViewPage()) {
+          renderViewPage();
+        } else if (!userIsTyping()) {
+          renderControlPage();
+        }
+      });
     }
 
     async function startApp() {
       try {
-        const app = initializeApp(firebaseConfig);
+        app = initializeApp(firebaseConfig);
         db = getDatabase(app);
-        roomRef = ref(db, `rooms/${getRoom()}/state`);
+        auth = getAuth(app);
 
-        const snapshot = await get(roomRef);
+        onAuthStateChanged(auth, async user => {
+          currentUser = user;
 
-        if (!snapshot.exists()) {
-          await set(roomRef, defaultState);
-        }
-
-        onValue(roomRef, snapshot => {
-          currentState = {
-            ...defaultState,
-            ...(snapshot.val() || {})
-          };
-
-          if (isViewPage()) {
-            renderViewPage();
-          } else if (!userIsTyping()) {
-            renderControlPage();
+          if (!user) {
+            renderLoginPage();
+            return;
           }
+
+          if (getRole() === "unauthorized") {
+            renderUnauthorizedPage();
+            return;
+          }
+
+          await connectRoom();
         });
 
         setInterval(updateViewDisplays, 250);
@@ -1084,3 +1136,8 @@
   </script>
 </body>
 </html>
+'''
+
+path = "/mnt/data/index_login_enabled.html"
+Path(path).write_text(code, encoding="utf-8")
+path
