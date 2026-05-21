@@ -7,7 +7,11 @@
   <title>Bullis Theatre Clock</title>
 
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     :root {
       --bg: #050816;
@@ -348,6 +352,10 @@
       height: 100%;
     }
 
+    .main-display.combo {
+      gap: min(2.4dvh, 28px);
+    }
+
     .view-stage.text-active .main-display {
       height: auto;
       flex-shrink: 0;
@@ -355,23 +363,19 @@
     }
 
     .view-stage.text-short .main-display {
-      max-height: 34dvh;
+      max-height: 42dvh;
     }
 
     .view-stage.text-medium .main-display {
-      max-height: 28dvh;
+      max-height: 34dvh;
     }
 
     .view-stage.text-long .main-display {
-      max-height: 22dvh;
+      max-height: 26dvh;
     }
 
     .view-stage.text-xlong .main-display {
-      max-height: 17dvh;
-    }
-
-    .main-display.combo {
-      gap: min(1.5dvh, 16px);
+      max-height: 18dvh;
     }
 
     .digital-clock,
@@ -390,7 +394,7 @@
 
     .combo .digital-clock,
     .combo .timer-display {
-      font-size: min(9vw, 16dvh, 9rem);
+      font-size: min(13vw, 23dvh, 12.5rem);
     }
 
     .combo .timer-display {
@@ -399,42 +403,42 @@
 
     .view-stage.text-short .digital-clock,
     .view-stage.text-short .timer-display {
-      font-size: min(9vw, 14dvh, 7.8rem);
+      font-size: min(10.5vw, 16dvh, 9rem);
     }
 
     .view-stage.text-medium .digital-clock,
     .view-stage.text-medium .timer-display {
-      font-size: min(8vw, 11dvh, 6.6rem);
+      font-size: min(8.2vw, 11.5dvh, 6.7rem);
     }
 
     .view-stage.text-long .digital-clock,
     .view-stage.text-long .timer-display {
-      font-size: min(6.8vw, 8.5dvh, 5.4rem);
+      font-size: min(6.5vw, 8.2dvh, 5rem);
     }
 
     .view-stage.text-xlong .digital-clock,
     .view-stage.text-xlong .timer-display {
-      font-size: min(5.4vw, 6.5dvh, 4.2rem);
+      font-size: min(5vw, 6dvh, 3.8rem);
     }
 
     .view-stage.text-short .combo .digital-clock,
     .view-stage.text-short .combo .timer-display {
-      font-size: min(6.5vw, 8.5dvh, 5.4rem);
+      font-size: min(8.4vw, 11dvh, 6.5rem);
     }
 
     .view-stage.text-medium .combo .digital-clock,
     .view-stage.text-medium .combo .timer-display {
-      font-size: min(5.8vw, 7dvh, 4.6rem);
+      font-size: min(6.8vw, 8.4dvh, 5rem);
     }
 
     .view-stage.text-long .combo .digital-clock,
     .view-stage.text-long .combo .timer-display {
-      font-size: min(4.8vw, 5.8dvh, 3.8rem);
+      font-size: min(5.4vw, 6.3dvh, 4rem);
     }
 
     .view-stage.text-xlong .combo .digital-clock,
     .view-stage.text-xlong .combo .timer-display {
-      font-size: min(4vw, 4.8dvh, 3.2rem);
+      font-size: min(4.2vw, 5dvh, 3rem);
     }
 
     .timezone-label,
@@ -452,8 +456,8 @@
     .view-stage.text-long .timer-label,
     .view-stage.text-xlong .timezone-label,
     .view-stage.text-xlong .timer-label {
-      font-size: min(1.2vw, 1.6dvh, 1rem);
-      margin-top: min(0.8dvh, 8px);
+      font-size: min(1.1vw, 1.4dvh, 0.9rem);
+      margin-top: min(0.7dvh, 7px);
     }
 
     .analog-clock {
@@ -472,18 +476,18 @@
     }
 
     .combo .analog-clock {
-      width: min(40vw, 35dvh, 390px);
-      height: min(40vw, 35dvh, 390px);
+      width: min(48vw, 46dvh, 500px);
+      height: min(48vw, 46dvh, 500px);
     }
 
     .view-stage.text-short .analog-clock {
-      width: min(31vw, 26dvh, 300px);
-      height: min(31vw, 26dvh, 300px);
+      width: min(34vw, 28dvh, 330px);
+      height: min(34vw, 28dvh, 330px);
     }
 
     .view-stage.text-medium .analog-clock {
-      width: min(26vw, 21dvh, 250px);
-      height: min(26vw, 21dvh, 250px);
+      width: min(28vw, 22dvh, 265px);
+      height: min(28vw, 22dvh, 265px);
     }
 
     .view-stage.text-long .analog-clock {
@@ -492,18 +496,18 @@
     }
 
     .view-stage.text-xlong .analog-clock {
-      width: min(17vw, 13dvh, 160px);
-      height: min(17vw, 13dvh, 160px);
+      width: min(16vw, 12dvh, 155px);
+      height: min(16vw, 12dvh, 155px);
     }
 
     .view-stage.text-short .combo .analog-clock {
-      width: min(24vw, 19dvh, 220px);
-      height: min(24vw, 19dvh, 220px);
+      width: min(26vw, 22dvh, 250px);
+      height: min(26vw, 22dvh, 250px);
     }
 
     .view-stage.text-medium .combo .analog-clock {
-      width: min(20vw, 16dvh, 185px);
-      height: min(20vw, 16dvh, 185px);
+      width: min(21vw, 16dvh, 190px);
+      height: min(21vw, 16dvh, 190px);
     }
 
     .view-stage.text-long .combo .analog-clock {
@@ -592,6 +596,7 @@
       overflow-wrap: anywhere;
       align-items: center;
       justify-content: center;
+      margin-top: auto;
       transition: min-height 0.25s ease, font-size 0.25s ease;
     }
 
@@ -600,27 +605,27 @@
     }
 
     .view-stage.text-short .message-display {
-      min-height: clamp(210px, 33dvh, 350px);
-      max-height: 55dvh;
-      font-size: min(8.5vw, 10.5dvh, 9rem);
+      min-height: clamp(130px, 18dvh, 230px);
+      max-height: 40dvh;
+      font-size: min(8.8vw, 10dvh, 8.5rem);
     }
 
     .view-stage.text-medium .message-display {
-      min-height: clamp(300px, 48dvh, 520px);
-      max-height: 68dvh;
-      font-size: min(6.4vw, 7.8dvh, 6.8rem);
+      min-height: clamp(210px, 32dvh, 390px);
+      max-height: 55dvh;
+      font-size: min(6.6vw, 7.8dvh, 6.8rem);
     }
 
     .view-stage.text-long .message-display {
-      min-height: clamp(430px, 62dvh, 720px);
-      max-height: 76dvh;
-      font-size: min(4.7vw, 5.8dvh, 5rem);
+      min-height: clamp(340px, 54dvh, 640px);
+      max-height: 70dvh;
+      font-size: min(4.8vw, 5.8dvh, 5rem);
     }
 
     .view-stage.text-xlong .message-display {
-      min-height: clamp(520px, 72dvh, 820px);
-      max-height: 81dvh;
-      font-size: min(3.6vw, 4.3dvh, 3.7rem);
+      min-height: clamp(470px, 70dvh, 820px);
+      max-height: 82dvh;
+      font-size: min(3.5vw, 4.2dvh, 3.7rem);
       line-height: 1.08;
     }
 
@@ -680,6 +685,13 @@
     body.fullscreen-active .fullscreen-btn,
     body.fullscreen-active .fullscreen-hint {
       display: none !important;
+    }
+
+    :fullscreen,
+    :fullscreen *,
+    body.fullscreen-active,
+    body.fullscreen-active * {
+      cursor: none !important;
     }
 
     .inactive-page {
@@ -1263,8 +1275,8 @@
                     <input type="radio" name="clockType" value="digital" ${state.clockType === "digital" ? "checked" : ""} ${disabled}>
 
                     <div>
-                      <strong>Full Screen Digital Clock</strong>
-                      <span>Large digital clock using New York / East Coast time.</span>
+                      <strong>Digital Clock</strong>
+                      <span>Digital Clock</span>
                     </div>
                   </label>
 
@@ -1272,8 +1284,8 @@
                     <input type="radio" name="clockType" value="analog" ${state.clockType === "analog" ? "checked" : ""} ${disabled}>
 
                     <div>
-                      <strong>Full Screen Analog Clock</strong>
-                      <span>Classic analog clock using New York / East Coast time.</span>
+                      <strong>Analog Clock</strong>
+                      <span>Analog Clock</span>
                     </div>
                   </label>
                 </div>
@@ -1315,7 +1327,7 @@
 
                     <div>
                       <strong>Venue Name</strong>
-                      <span>Shows the Bullis Howard Auditorium image full screen.</span>
+                      <span>Shows the venue image full screen.</span>
                     </div>
                   </label>
                 </div>
@@ -1548,7 +1560,7 @@
     }
 
     function renderViewPage() {
-      if (getRole() === "viewer" && (!currentRoomExists || currentState.roomActive === false)) {
+      if (!currentRoomExists || currentState.roomActive === false) {
         renderInactiveRoomPage();
         return;
       }
