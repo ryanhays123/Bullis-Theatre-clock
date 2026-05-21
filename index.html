@@ -34,7 +34,8 @@ code = r'''<!DOCTYPE html>
 
     .control-page,
     .login-page,
-    .setup-page {
+    .setup-page,
+    .viewer-join-page {
       min-height: 100vh;
       padding: 36px;
       background:
@@ -45,8 +46,9 @@ code = r'''<!DOCTYPE html>
 
     .wrap { max-width: 1150px; margin: 0 auto; }
 
-    .login-wrap {
-      max-width: 520px;
+    .login-wrap,
+    .viewer-join-wrap {
+      max-width: 540px;
       margin: 0 auto;
       min-height: calc(100vh - 72px);
       display: flex;
@@ -189,10 +191,12 @@ code = r'''<!DOCTYPE html>
 
     .btn.red { background: var(--red); }
     .btn.green { background: var(--green); }
+    .btn.yellow { background: var(--yellow); color: #111827; }
     .btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
     .role-pill,
-    .status-pill {
+    .status-pill,
+    .active-pill {
       display: inline-flex;
       align-items: center;
       gap: 8px;
@@ -204,11 +208,15 @@ code = r'''<!DOCTYPE html>
       font-size: 0.9rem;
     }
 
-    .role-pill {
+    .role-pill,
+    .active-pill {
       margin-top: 0;
       color: white;
       border: 1px solid var(--line);
     }
+
+    .active-pill.on { background: rgba(34, 197, 94, 0.16); color: #bbf7d0; }
+    .active-pill.off { background: rgba(239, 68, 68, 0.16); color: #fecaca; }
 
     .status-dot {
       width: 9px;
@@ -216,6 +224,8 @@ code = r'''<!DOCTYPE html>
       border-radius: 50%;
       background: var(--green);
     }
+
+    .status-dot.red { background: var(--red); }
 
     .warning {
       background: rgba(250, 204, 21, 0.12);
@@ -237,6 +247,7 @@ code = r'''<!DOCTYPE html>
       display: none;
     }
 
+    /* VIEW PAGE */
     .view-page {
       height: 100dvh;
       width: 100vw;
@@ -422,8 +433,42 @@ code = r'''<!DOCTYPE html>
 
     .view-stage.text-active .message-display { display: flex; }
 
+    .inactive-page {
+      width: 100vw;
+      height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(24px, 6vw, 80px);
+      text-align: center;
+      background:
+        radial-gradient(circle at top, rgba(239, 68, 68, 0.18), transparent 35%),
+        linear-gradient(135deg, #020617, #0b1120 55%, #111827);
+    }
+
+    .inactive-card {
+      max-width: 1000px;
+      padding: clamp(28px, 5vw, 64px);
+      border-radius: 34px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.38);
+    }
+
+    .inactive-card h1 {
+      font-size: clamp(3rem, 9vw, 8rem);
+      line-height: 0.95;
+      letter-spacing: -0.06em;
+      margin-bottom: 20px;
+    }
+
+    .inactive-card p {
+      color: var(--muted);
+      font-size: clamp(1.1rem, 2vw, 1.8rem);
+    }
+
     @media (max-width: 850px) {
-      .control-page, .setup-page, .login-page { padding: 22px; }
+      .control-page, .setup-page, .login-page, .viewer-join-page { padding: 22px; }
       .header { flex-direction: column; align-items: flex-start; }
       .grid, .form-row { grid-template-columns: 1fr; }
     }
@@ -461,6 +506,7 @@ code = r'''<!DOCTYPE html>
     const TIME_ZONE = "America/New_York";
 
     const defaultState = {
+      roomActive: true,
       clockType: "digital",
       displayMode: "clock",
       timerType: "countdown",
@@ -480,6 +526,7 @@ code = r'''<!DOCTYPE html>
     let unsubscribeRoom = null;
     let currentUser = null;
     let currentState = { ...defaultState };
+    let currentRoomExists = false;
 
     function isViewPage() {
       return new URLSearchParams(window.location.search).get("view") === "1";
@@ -498,6 +545,16 @@ code = r'''<!DOCTYPE html>
       params.set("room", clean);
       if (isViewPage()) params.set("view", "1");
       window.location.search = params.toString();
+    }
+
+    function joinViewerRoom(room) {
+      const clean = room.trim().replace(/[^a-zA-Z0-9_-]/g, "-") || "main";
+      localStorage.setItem("remote_clock_room", clean);
+
+      const url = new URL(window.location.href);
+      url.searchParams.set("view", "1");
+      url.searchParams.set("room", clean);
+      window.location.href = url.toString();
     }
 
     function getViewURL() {
@@ -652,7 +709,7 @@ code = r'''<!DOCTYPE html>
               </div>
 
               <div class="warning">
-                Use <strong>admin</strong> for full control or <strong>viewer</strong> for view-only access.
+                Use <strong>admin</strong> for full control or <strong>viewer</strong> for display-only access.
               </div>
 
               <div class="error-text" id="loginError" style="${message ? "display:block;" : ""}">
@@ -715,10 +772,70 @@ code = r'''<!DOCTYPE html>
       `;
     }
 
+    function renderViewerJoinPage() {
+      const savedRoom = getRoom();
+
+      document.getElementById("app").innerHTML = `
+        <main class="viewer-join-page">
+          <div class="viewer-join-wrap">
+            <section class="card full" style="width: 100%;">
+              <h1 style="font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1; letter-spacing: -0.04em; margin-bottom: 14px;">
+                Join Display Room
+              </h1>
+
+              <p>Enter the room code to view that display feed.</p>
+
+              <div class="form-row" style="grid-template-columns: 1fr; margin-top: 22px;">
+                <label class="small-label">
+                  Room Code
+                  <input id="viewerRoomInput" type="text" value="${escapeHTML(savedRoom)}" placeholder="Example: auditorium2026">
+                </label>
+              </div>
+
+              <div class="button-row">
+                <button class="btn green" id="joinRoomBtn">Join Room</button>
+                <button class="btn red" id="logoutBtn">Log Out</button>
+              </div>
+
+              <div class="warning">
+                Viewer mode only displays the room feed. It cannot change clock, timer, text, or room settings.
+              </div>
+            </section>
+          </div>
+        </main>
+      `;
+
+      document.getElementById("joinRoomBtn").addEventListener("click", () => {
+        joinViewerRoom(document.getElementById("viewerRoomInput").value);
+      });
+
+      document.getElementById("viewerRoomInput").addEventListener("keydown", event => {
+        if (event.key === "Enter") {
+          joinViewerRoom(document.getElementById("viewerRoomInput").value);
+        }
+      });
+
+      document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
+    }
+
+    function renderInactiveRoomPage() {
+      document.getElementById("app").innerHTML = `
+        <main class="inactive-page">
+          <section class="inactive-card">
+            <h1>Room Not Active</h1>
+            <p>
+              This room is currently deactivated or unavailable. Please check the room code or contact the controller.
+            </p>
+          </section>
+        </main>
+      `;
+    }
+
     function renderControlPage() {
       const state = currentState;
       const countdownMinutes = Math.floor((state.countdownSeconds || 0) / 60);
       const countdownSeconds = (state.countdownSeconds || 0) % 60;
+      const active = state.roomActive !== false;
       const admin = canWrite();
       const disabled = admin ? "" : "disabled";
       const disabledClass = admin ? "" : "disabled";
@@ -730,7 +847,7 @@ code = r'''<!DOCTYPE html>
               <div>
                 <h1>Remote Clock Control</h1>
                 <p>
-                  Control or view the auditorium display. Admin can change settings. Viewer can only view settings and the display.
+                  Admin can change settings and activate/deactivate the room. Viewer accounts only join a room and see its feed.
                 </p>
               </div>
 
@@ -742,12 +859,6 @@ code = r'''<!DOCTYPE html>
                 </div>
               </div>
             </header>
-
-            ${admin ? "" : `
-              <div class="warning" style="margin-bottom: 20px;">
-                Viewer mode is read-only. Log in as admin to change the clock, timer, or screen text.
-              </div>
-            `}
 
             <section class="grid">
               <div class="card full">
@@ -774,6 +885,24 @@ code = r'''<!DOCTYPE html>
                 <div class="button-row">
                   <button class="btn" id="setRoomBtn">Use This Room</button>
                   <button class="btn secondary" id="copyViewBtn">Copy View Link</button>
+                </div>
+              </div>
+
+              <div class="card full">
+                <h2>Room Status</h2>
+                <p>
+                  When the room is active, viewers can join and see the feed. When it is deactivated, viewers will only see a room-not-active message.
+                </p>
+
+                <div class="button-row">
+                  <span class="active-pill ${active ? "on" : "off"}">
+                    <span class="status-dot ${active ? "" : "red"}"></span>
+                    ${active ? "ROOM ACTIVE" : "ROOM DEACTIVATED"}
+                  </span>
+
+                  <button class="btn ${active ? "red" : "green"}" id="toggleRoomActiveBtn" ${disabled}>
+                    ${active ? "Deactivate Room" : "Activate Room"}
+                  </button>
                 </div>
               </div>
 
@@ -913,6 +1042,10 @@ code = r'''<!DOCTYPE html>
 
       if (!canWrite()) return;
 
+      document.getElementById("toggleRoomActiveBtn").addEventListener("click", () => {
+        saveState({ roomActive: currentState.roomActive === false });
+      });
+
       document.querySelectorAll('input[name="clockType"]').forEach(input => {
         input.addEventListener("change", () => saveState({ clockType: input.value }));
       });
@@ -1032,6 +1165,11 @@ code = r'''<!DOCTYPE html>
     }
 
     function renderViewPage() {
+      if (getRole() === "viewer" && (!currentRoomExists || currentState.roomActive === false)) {
+        renderInactiveRoomPage();
+        return;
+      }
+
       const state = currentState;
       const hasVisibleMessage = state.messageVisible && String(state.message || "").trim().length > 0;
 
@@ -1089,15 +1227,27 @@ code = r'''<!DOCTYPE html>
       roomRef = ref(db, `rooms/${getRoom()}/state`);
 
       const snapshot = await get(roomRef);
-      if (!snapshot.exists() && canWrite()) {
-        await set(roomRef, defaultState);
+      currentRoomExists = snapshot.exists();
+
+      if (!currentRoomExists && canWrite()) {
+        currentState = { ...defaultState, roomActive: true };
+        await set(roomRef, currentState);
+        currentRoomExists = true;
       }
 
       unsubscribeRoom = onValue(roomRef, snapshot => {
-        currentState = { ...defaultState, ...(snapshot.val() || {}) };
+        currentRoomExists = snapshot.exists();
+
+        if (currentRoomExists) {
+          currentState = { ...defaultState, ...(snapshot.val() || {}) };
+        } else {
+          currentState = { ...defaultState, roomActive: false };
+        }
 
         if (isViewPage()) {
           renderViewPage();
+        } else if (getRole() === "viewer") {
+          renderViewerJoinPage();
         } else if (!userIsTyping()) {
           renderControlPage();
         }
@@ -1123,6 +1273,11 @@ code = r'''<!DOCTYPE html>
             return;
           }
 
+          if (getRole() === "viewer" && !isViewPage()) {
+            renderViewerJoinPage();
+            return;
+          }
+
           await connectRoom();
         });
 
@@ -1138,6 +1293,6 @@ code = r'''<!DOCTYPE html>
 </html>
 '''
 
-path = "/mnt/data/index_login_enabled.html"
-Path(path).write_text(code, encoding="utf-8")
-path
+path = Path("/mnt/data/index_room_active_viewer_join.html")
+path.write_text(code, encoding="utf-8")
+print(path)
