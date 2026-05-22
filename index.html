@@ -370,10 +370,30 @@
       color: #fecaca;
     }
 
+    .room-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .close-room-btn,
     .delete-room-btn {
       padding: 8px 12px;
       font-size: 0.85rem;
       border-radius: 12px;
+    }
+
+    .current-room-badge {
+      display: inline-flex;
+      margin-left: 8px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: rgba(59, 130, 246, 0.18);
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      color: #bfdbfe;
+      font-size: 0.72rem;
+      font-weight: 800;
+      vertical-align: middle;
     }
 
     .view-page {
@@ -819,6 +839,11 @@
         align-items: flex-start;
         flex-direction: column;
       }
+
+      .room-actions {
+        width: 100%;
+        justify-content: space-between;
+      }
     }
   </style>
 </head>
@@ -1091,35 +1116,50 @@
 
     function renderOtherRoomsHTML() {
       const currentRoom = getRoom();
+      const rooms = { ...(allRooms || {}) };
 
-      const roomNames = Object.keys(allRooms || {})
-        .filter(roomName => roomName !== currentRoom)
-        .sort();
+      if (!rooms[currentRoom] && currentRoomExists) {
+        rooms[currentRoom] = { state: currentState };
+      }
+
+      const roomNames = Object.keys(rooms).sort((a, b) => {
+        if (a === currentRoom) return -1;
+        if (b === currentRoom) return 1;
+        return a.localeCompare(b);
+      });
 
       if (roomNames.length === 0) {
-        return `<p>No other rooms are currently opened.</p>`;
+        return `<p>No rooms currently exist.</p>`;
       }
 
       return `
         <div class="room-list">
           ${roomNames.map(roomName => {
-            const roomState = allRooms[roomName]?.state || {};
+            const roomState = rooms[roomName]?.state || {};
             const active = roomState.roomActive !== false;
             const mode = roomState.displayMode || "clock";
+            const isCurrent = roomName === currentRoom;
 
             return `
               <div class="room-item">
                 <div>
-                  <div class="room-name">${escapeHTML(roomName)}</div>
+                  <div class="room-name">
+                    ${escapeHTML(roomName)}
+                    ${isCurrent ? `<span class="current-room-badge">Current</span>` : ""}
+                  </div>
                   <div class="room-status">Mode: ${escapeHTML(mode)}</div>
                 </div>
 
-                <div style="display: flex; align-items: center; gap: 10px;">
+                <div class="room-actions">
                   <div class="room-status ${active ? "active" : "inactive"}">
                     ${active ? "Active" : "Deactivated"}
                   </div>
 
-                  ${active ? "" : `
+                  ${active ? `
+                    <button class="btn red close-room-btn" data-room="${escapeHTML(roomName)}">
+                      Close
+                    </button>
+                  ` : `
                     <button class="btn red delete-room-btn" data-room="${escapeHTML(roomName)}">
                       Delete
                     </button>
@@ -1151,6 +1191,24 @@
         alert(`Room "${roomName}" was deleted.`);
       } catch (error) {
         alert("Could not delete the room. Check Firebase permissions.");
+        console.error(error);
+      }
+    }
+
+    async function closeRoomFromList(roomName) {
+      if (!canWrite()) {
+        alert("Only the admin can close rooms.");
+        return;
+      }
+
+      try {
+        await update(ref(db, `rooms/${roomName}/state`), {
+          roomActive: false,
+          deactivatedAt: Date.now(),
+          lastUpdated: Date.now()
+        });
+      } catch (error) {
+        alert("Could not close the room. Check Firebase permissions.");
         console.error(error);
       }
     }
@@ -1611,8 +1669,8 @@
               </div>
 
               <div class="card full">
-                <h2>Other Rooms Currently Opened</h2>
-                <p>Active and deactivated rooms are listed here. Deactivated rooms can be deleted manually.</p>
+                <h2>Existing Rooms</h2>
+                <p>All existing rooms are listed here. Active rooms can be closed, and deactivated rooms can be deleted.</p>
                 ${renderOtherRoomsHTML()}
               </div>
             </section>
@@ -1640,6 +1698,13 @@
       document.getElementById("copyViewBtn").addEventListener("click", async () => {
         await navigator.clipboard.writeText(getViewURL());
         alert("View link copied.");
+      });
+
+      document.querySelectorAll(".close-room-btn").forEach(button => {
+        button.addEventListener("click", () => {
+          const roomName = button.dataset.room;
+          closeRoomFromList(roomName);
+        });
       });
 
       document.querySelectorAll(".delete-room-btn").forEach(button => {
