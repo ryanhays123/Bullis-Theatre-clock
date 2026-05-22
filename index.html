@@ -370,6 +370,12 @@
       color: #fecaca;
     }
 
+    .delete-room-btn {
+      padding: 8px 12px;
+      font-size: 0.85rem;
+      border-radius: 12px;
+    }
+
     .view-page {
       height: 100dvh;
       width: 100vw;
@@ -808,6 +814,11 @@
       .form-row {
         grid-template-columns: 1fr;
       }
+
+      .room-item {
+        align-items: flex-start;
+        flex-direction: column;
+      }
     }
   </style>
 </head>
@@ -839,8 +850,7 @@
       onValue,
       set,
       get,
-      onDisconnect,
-      serverTimestamp
+      update
     } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
 
     import {
@@ -877,16 +887,7 @@
     let currentState = { ...defaultState };
     let currentRoomExists = false;
     let allRooms = {};
-    let adminPresenceRef = null;
-    let adminSessionId = sessionStorage.getItem("admin_session_id");
-
-    if (!adminSessionId) {
-      adminSessionId =
-        (window.crypto && window.crypto.randomUUID && window.crypto.randomUUID()) ||
-        `${Date.now()}_${Math.random().toString(36).slice(2)}`;
-
-      sessionStorage.setItem("admin_session_id", adminSessionId);
-    }
+    let cleanupRunning = false;
 
     function isViewPage() {
       return new URLSearchParams(window.location.search).get("view") === "1";
@@ -1113,14 +1114,83 @@
                   <div class="room-status">Mode: ${escapeHTML(mode)}</div>
                 </div>
 
-                <div class="room-status ${active ? "active" : "inactive"}">
-                  ${active ? "Active" : "Deactivated"}
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <div class="room-status ${active ? "active" : "inactive"}">
+                    ${active ? "Active" : "Deactivated"}
+                  </div>
+
+                  ${active ? "" : `
+                    <button class="btn red delete-room-btn" data-room="${escapeHTML(roomName)}">
+                      Delete
+                    </button>
+                  `}
                 </div>
               </div>
             `;
           }).join("")}
         </div>
       `;
+    }
+
+    async function deleteRoomWithConfirm(roomName) {
+      if (!canWrite()) {
+        alert("Only the admin can delete rooms.");
+        return;
+      }
+
+      const confirmed = confirm(
+        `Are you sure you want to delete the room "${roomName}"?\n\nThis will permanently remove the room and all of its settings.`
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        await set(ref(db, `rooms/${roomName}`), null);
+        alert(`Room "${roomName}" was deleted.`);
+      } catch (error) {
+        alert("Could not delete the room. Check Firebase permissions.");
+        console.error(error);
+      }
+    }
+
+    async function cleanupOldDeactivatedRooms() {
+      if (!canWrite() || cleanupRunning) {
+        return;
+      }
+
+      cleanupRunning = true;
+
+      try {
+        const now = Date.now();
+        const twentyFourHours = 24 * 60 * 60 * 1000;
+        const updates = {};
+
+        Object.entries(allRooms || {}).forEach(([roomName, roomData]) => {
+          const roomState = roomData?.state || {};
+          const isDeactivated = roomState.roomActive === false;
+
+          const deactivatedAt = Number(
+            roomState.deactivatedAt || roomState.lastUpdated || 0
+          );
+
+          const oldEnough =
+            deactivatedAt > 0 && now - deactivatedAt >= twentyFourHours;
+
+          if (isDeactivated && oldEnough) {
+            updates[`rooms/${roomName}`] = null;
+          }
+        });
+
+        if (Object.keys(updates).length > 0) {
+          await update(ref(db), updates);
+        }
+      } catch (error) {
+        console.warn("Old room cleanup failed:", error);
+      } finally {
+        cleanupRunning = false;
+      }
     }
 
     function renderLoginPage(message = "") {
@@ -1542,7 +1612,7 @@
 
               <div class="card full">
                 <h2>Other Rooms Currently Opened</h2>
-                <p>These are the other rooms saved in Firebase, not including the room you are currently controlling.</p>
+                <p>Active and deactivated rooms are listed here. Deactivated rooms can be deleted manually.</p>
                 ${renderOtherRoomsHTML()}
               </div>
             </section>
@@ -1570,6 +1640,13 @@
       document.getElementById("copyViewBtn").addEventListener("click", async () => {
         await navigator.clipboard.writeText(getViewURL());
         alert("View link copied.");
+      });
+
+      document.querySelectorAll(".delete-room-btn").forEach(button => {
+        button.addEventListener("click", () => {
+          const roomName = button.dataset.room;
+          deleteRoomWithConfirm(roomName);
+        });
       });
 
       if (!canWrite()) {
@@ -1837,40 +1914,15 @@
         return;
       }
 
-      unsubscribeAllRooms = onValue(ref(db, "rooms"), snapshot => {
+      unsubscribeAllRooms = onValue(ref(db, "rooms"), async snapshot => {
         allRooms = snapshot.val() || {};
+
+        await cleanupOldDeactivatedRooms();
 
         if (!isViewPage() && getRole() === "admin" && !userIsTyping()) {
           renderControlPage();
         }
       });
-    }
-
-    async function markAdminControlPageOpen() {
-      if (getRole() !== "admin" || isViewPage()) {
-        return;
-      }
-
-      if (adminPresenceRef) {
-        try {
-          await set(adminPresenceRef, null);
-        } catch (error) {
-          console.warn("Could not clear old admin presence:", error);
-        }
-      }
-
-      adminPresenceRef = ref(
-        db,
-        `presence/admins/${getRoom()}/${currentUser.uid}_${adminSessionId}`
-      );
-
-      await set(adminPresenceRef, {
-        uid: currentUser.uid,
-        room: getRoom(),
-        connectedAt: serverTimestamp()
-      });
-
-      onDisconnect(adminPresenceRef).remove();
     }
 
     async function startApp() {
@@ -1899,10 +1951,15 @@
 
           await connectRoom();
           connectRoomsList();
-          await markAdminControlPageOpen();
         });
 
         setInterval(updateViewDisplays, 250);
+
+        setInterval(() => {
+          if (getRole() === "admin" && !isViewPage()) {
+            cleanupOldDeactivatedRooms();
+          }
+        }, 60 * 1000);
       } catch (error) {
         renderErrorPage(error.message || String(error));
       }
