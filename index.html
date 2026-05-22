@@ -1,60 +1,1118 @@
-from pathlib import Path
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-src = Path("/mnt/data/index_final_simple_fullscreen.html")
-if not src.exists():
-    src = Path("/mnt/data/index_clean_no_extra_code.html")
-if not src.exists():
-    src = Path("/mnt/data/bullis_theatre_clock_final_finished.html")
+  <title>Bullis Theatre Clock</title>
 
-code = src.read_text(encoding="utf-8")
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-old = '''    function renderViewerJoinPage() {
-      const savedRoom = getRoom();
+    :root {
+      --bg: #050816;
+      --text: #f8fafc;
+      --muted: #a9b4c7;
+      --line: rgba(255, 255, 255, 0.12);
+      --blue: #3b82f6;
+      --red: #ef4444;
+      --green: #22c55e;
+      --yellow: #facc15;
+    }
 
+    html,
+    body {
+      min-height: 100%;
+      font-family: Arial, Helvetica, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overscroll-behavior: none;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+    }
+
+    .control-page,
+    .login-page,
+    .viewer-join-page,
+    .setup-page {
+      min-height: 100vh;
+      padding: 36px;
+      background:
+        radial-gradient(circle at top left, rgba(59, 130, 246, 0.24), transparent 32%),
+        radial-gradient(circle at bottom right, rgba(239, 68, 68, 0.16), transparent 32%),
+        var(--bg);
+    }
+
+    .wrap {
+      max-width: 1150px;
+      margin: 0 auto;
+    }
+
+    .login-wrap,
+    .viewer-join-wrap {
+      max-width: 540px;
+      margin: 0 auto;
+      min-height: calc(100vh - 72px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 28px;
+    }
+
+    .header h1 {
+      font-size: clamp(2rem, 4vw, 3.6rem);
+      line-height: 1;
+      letter-spacing: -0.04em;
+    }
+
+    .header p {
+      color: var(--muted);
+      margin-top: 10px;
+      max-width: 750px;
+      font-size: 1rem;
+    }
+
+    .open-view {
+      display: inline-block;
+      white-space: nowrap;
+      text-decoration: none;
+      color: white;
+      background: var(--blue);
+      padding: 13px 18px;
+      border-radius: 999px;
+      font-weight: bold;
+      box-shadow: 0 14px 30px rgba(59, 130, 246, 0.25);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .card {
+      background: rgba(16, 24, 45, 0.88);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+    }
+
+    .card.full {
+      grid-column: 1 / -1;
+    }
+
+    .card h2 {
+      font-size: 1.3rem;
+      margin-bottom: 14px;
+    }
+
+    .card p {
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .option-group {
+      display: grid;
+      gap: 12px;
+    }
+
+    .radio-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--line);
+    }
+
+    .radio-card.disabled {
+      opacity: 0.65;
+      pointer-events: none;
+    }
+
+    .radio-card input {
+      width: 18px;
+      height: 18px;
+    }
+
+    .radio-card strong {
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .radio-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    label.small-label {
+      display: grid;
+      gap: 7px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    input[type="number"],
+    input[type="text"],
+    input[type="password"],
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.08);
+      color: white;
+      padding: 12px;
+      outline: none;
+    }
+
+    input:disabled,
+    textarea:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 115px;
+      font-size: 1.05rem;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: rgba(59, 130, 246, 0.8);
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .btn {
+      color: white;
+      padding: 12px 17px;
+      border-radius: 14px;
+      font-weight: bold;
+      background: var(--blue);
+    }
+
+    .btn.secondary {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid var(--line);
+    }
+
+    .btn.red {
+      background: var(--red);
+    }
+
+    .btn.green {
+      background: var(--green);
+    }
+
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .role-pill,
+    .status-pill,
+    .active-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 16px;
+      padding: 9px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .role-pill,
+    .active-pill {
+      margin-top: 0;
+      color: white;
+      border: 1px solid var(--line);
+    }
+
+    .active-pill.on {
+      background: rgba(34, 197, 94, 0.16);
+      color: #bbf7d0;
+    }
+
+    .active-pill.off {
+      background: rgba(239, 68, 68, 0.16);
+      color: #fecaca;
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--green);
+    }
+
+    .status-dot.red {
+      background: var(--red);
+    }
+
+    .warning {
+      background: rgba(250, 204, 21, 0.12);
+      border: 1px solid rgba(250, 204, 21, 0.3);
+      color: #fde68a;
+      padding: 12px 14px;
+      border-radius: 16px;
+      margin-top: 14px;
+      line-height: 1.45;
+    }
+
+    .error-text {
+      color: #fecaca;
+      background: rgba(239, 68, 68, 0.13);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      padding: 12px 14px;
+      border-radius: 16px;
+      margin-top: 14px;
+      display: none;
+    }
+
+    .view-page {
+      height: 100dvh;
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+      color: white;
+    }
+
+    .view-stage {
+      width: 100vw;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(16px, 3vw, 50px);
+      text-align: center;
+      overflow: hidden;
+      gap: clamp(14px, 2dvh, 28px);
+    }
+
+    .view-stage.text-active {
+      justify-content: flex-start;
+      padding-top: clamp(12px, 1.8dvh, 24px);
+      padding-bottom: clamp(12px, 1.8dvh, 24px);
+      gap: clamp(10px, 1.6dvh, 20px);
+    }
+
+    .main-display {
+      width: 100%;
+      max-height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: min(2.5dvh, 28px);
+      overflow: visible;
+      flex-shrink: 1;
+    }
+
+    .main-display.venue-mode {
+      height: 100%;
+    }
+
+    .main-display.combo {
+      gap: min(2.4dvh, 28px);
+    }
+
+    .view-stage.text-active .main-display {
+      height: auto;
+      flex-shrink: 0;
+      transition: max-height 0.25s ease;
+    }
+
+    .view-stage.text-short .main-display {
+      max-height: 68dvh;
+    }
+
+    .view-stage.text-medium .main-display {
+      max-height: 52dvh;
+    }
+
+    .view-stage.text-long .main-display {
+      max-height: 36dvh;
+    }
+
+    .view-stage.text-xlong .main-display {
+      max-height: 22dvh;
+    }
+
+    .digital-clock,
+    .timer-display {
+      font-size: min(15vw, 34dvh, 15rem);
+      font-weight: 900;
+      line-height: 0.86;
+      letter-spacing: -0.08em;
+      text-shadow: 0 20px 60px rgba(0, 0, 0, 0.42);
+      white-space: nowrap;
+    }
+
+    .timer-display {
+      letter-spacing: -0.07em;
+    }
+
+    .combo .digital-clock,
+    .combo .timer-display {
+      font-size: min(15vw, 28dvh, 14rem);
+    }
+
+    .combo .timer-display {
+      color: #bfdbfe;
+    }
+
+    .view-stage.text-short .digital-clock,
+    .view-stage.text-short .timer-display {
+      font-size: min(13vw, 28dvh, 13rem);
+    }
+
+    .view-stage.text-medium .digital-clock,
+    .view-stage.text-medium .timer-display {
+      font-size: min(10vw, 18dvh, 9rem);
+    }
+
+    .view-stage.text-long .digital-clock,
+    .view-stage.text-long .timer-display {
+      font-size: min(7vw, 10dvh, 5.6rem);
+    }
+
+    .view-stage.text-xlong .digital-clock,
+    .view-stage.text-xlong .timer-display {
+      font-size: min(5vw, 6dvh, 3.8rem);
+    }
+
+    .view-stage.text-short .combo .digital-clock,
+    .view-stage.text-short .combo .timer-display {
+      font-size: min(12vw, 22dvh, 11.5rem);
+    }
+
+    .view-stage.text-medium .combo .digital-clock,
+    .view-stage.text-medium .combo .timer-display {
+      font-size: min(9vw, 14dvh, 7.8rem);
+    }
+
+    .view-stage.text-long .combo .digital-clock,
+    .view-stage.text-long .combo .timer-display {
+      font-size: min(6vw, 7.8dvh, 4.8rem);
+    }
+
+    .view-stage.text-xlong .combo .digital-clock,
+    .view-stage.text-xlong .combo .timer-display {
+      font-size: min(4.4vw, 5.3dvh, 3.2rem);
+    }
+
+    .timezone-label,
+    .timer-label {
+      margin-top: min(1.3dvh, 12px);
+      font-size: min(1.8vw, 2.2dvh, 1.35rem);
+      color: rgba(255, 255, 255, 0.65);
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .view-stage.text-long .timezone-label,
+    .view-stage.text-long .timer-label,
+    .view-stage.text-xlong .timezone-label,
+    .view-stage.text-xlong .timer-label {
+      font-size: min(1.1vw, 1.4dvh, 0.9rem);
+      margin-top: min(0.7dvh, 7px);
+    }
+
+    .analog-clock {
+      position: relative;
+      width: min(70vw, 70dvh, 650px);
+      height: min(70vw, 70dvh, 650px);
+      flex: 0 0 auto;
+      border-radius: 50%;
+      border: clamp(7px, 1.1vw, 14px) solid rgba(255, 255, 255, 0.92);
+      background:
+        radial-gradient(circle at center, rgba(255, 255, 255, 0.12), transparent 58%),
+        rgba(255, 255, 255, 0.04);
+      box-shadow:
+        0 30px 90px rgba(0, 0, 0, 0.45),
+        inset 0 0 30px rgba(255, 255, 255, 0.08);
+    }
+
+    .combo .analog-clock {
+      width: min(54vw, 50dvh, 540px);
+      height: min(54vw, 50dvh, 540px);
+    }
+
+    .view-stage.text-short .analog-clock {
+      width: min(44vw, 42dvh, 430px);
+      height: min(44vw, 42dvh, 430px);
+    }
+
+    .view-stage.text-medium .analog-clock {
+      width: min(32vw, 28dvh, 320px);
+      height: min(32vw, 28dvh, 320px);
+    }
+
+    .view-stage.text-long .analog-clock {
+      width: min(22vw, 17dvh, 210px);
+      height: min(22vw, 17dvh, 210px);
+    }
+
+    .view-stage.text-xlong .analog-clock {
+      width: min(16vw, 12dvh, 155px);
+      height: min(16vw, 12dvh, 155px);
+    }
+
+    .view-stage.text-short .combo .analog-clock {
+      width: min(40vw, 36dvh, 390px);
+      height: min(40vw, 36dvh, 390px);
+    }
+
+    .view-stage.text-medium .combo .analog-clock {
+      width: min(28vw, 24dvh, 270px);
+      height: min(28vw, 24dvh, 270px);
+    }
+
+    .view-stage.text-long .combo .analog-clock {
+      width: min(18vw, 13dvh, 165px);
+      height: min(18vw, 13dvh, 165px);
+    }
+
+    .view-stage.text-xlong .combo .analog-clock {
+      width: min(13vw, 9dvh, 120px);
+      height: min(13vw, 9dvh, 120px);
+    }
+
+    .clock-number {
+      position: absolute;
+      left: var(--x);
+      top: var(--y);
+      transform: translate(-50%, -50%);
+      font-size: min(3vw, 3dvh, 2rem);
+      font-weight: 800;
+    }
+
+    .combo .clock-number,
+    .view-stage.text-active .clock-number {
+      font-size: min(2vw, 2dvh, 1.35rem);
+    }
+
+    .view-stage.text-long .clock-number,
+    .view-stage.text-xlong .clock-number {
+      font-size: min(1.4vw, 1.4dvh, 0.95rem);
+    }
+
+    .hand {
+      position: absolute;
+      left: 50%;
+      bottom: 50%;
+      transform-origin: bottom center;
+      border-radius: 999px;
+      background: white;
+    }
+
+    .hand.hour {
+      width: max(7px, 1.5%);
+      height: 27%;
+      margin-left: max(-6px, -0.75%);
+    }
+
+    .hand.minute {
+      width: max(5px, 1%);
+      height: 37%;
+      margin-left: max(-4px, -0.5%);
+      background: #dbeafe;
+    }
+
+    .hand.second {
+      width: max(3px, 0.55%);
+      height: 42%;
+      margin-left: max(-2px, -0.275%);
+      background: var(--red);
+    }
+
+    .center-dot {
+      position: absolute;
+      width: min(5vw, 5dvh, 24px);
+      height: min(5vw, 5dvh, 24px);
+      border-radius: 50%;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--red);
+      border: min(1vw, 1dvh, 5px) solid white;
+    }
+
+    .message-display {
+      display: none;
+      width: min(94vw, 1500px);
+      overflow: auto;
+      padding: clamp(18px, 3vw, 44px);
+      border-radius: clamp(18px, 3vw, 34px);
+      background: rgba(239, 68, 68, 0.16);
+      border: 1px solid rgba(248, 113, 113, 0.34);
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.38);
+      font-weight: 900;
+      line-height: 1.02;
+      letter-spacing: -0.05em;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      align-items: center;
+      justify-content: center;
+      margin-top: auto;
+      transition: min-height 0.25s ease, font-size 0.25s ease;
+    }
+
+    .view-stage.text-active .message-display {
+      display: flex;
+    }
+
+    .view-stage.text-short .message-display {
+      min-height: clamp(110px, 15dvh, 190px);
+      max-height: 28dvh;
+      font-size: min(8vw, 9dvh, 7.5rem);
+    }
+
+    .view-stage.text-medium .message-display {
+      min-height: clamp(180px, 28dvh, 330px);
+      max-height: 44dvh;
+      font-size: min(6.4vw, 7.2dvh, 6.3rem);
+    }
+
+    .view-stage.text-long .message-display {
+      min-height: clamp(320px, 52dvh, 620px);
+      max-height: 68dvh;
+      font-size: min(4.6vw, 5.3dvh, 4.7rem);
+    }
+
+    .view-stage.text-xlong .message-display {
+      min-height: clamp(470px, 70dvh, 820px);
+      max-height: 82dvh;
+      font-size: min(3.4vw, 4dvh, 3.5rem);
+      line-height: 1.08;
+    }
+
+    .venue-display {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .venue-display img {
+      max-width: 96vw;
+      max-height: 92dvh;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      display: block;
+    }
+
+    .fullscreen-btn {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 9999;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      color: white;
+      font-weight: 800;
+      font-size: 0.9rem;
+      backdrop-filter: blur(10px);
+      opacity: 0.55;
+      transition: opacity 0.2s ease, background 0.2s ease;
+    }
+
+    .fullscreen-btn:hover {
+      opacity: 1;
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .fullscreen-hint {
+      position: fixed;
+      bottom: 14px;
+      right: 16px;
+      z-index: 9998;
+      color: rgba(255, 255, 255, 0.35);
+      font-size: 0.8rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      pointer-events: none;
+    }
+
+    :fullscreen .fullscreen-btn,
+    :fullscreen .fullscreen-hint,
+    body.fullscreen-active .fullscreen-btn,
+    body.fullscreen-active .fullscreen-hint {
+      display: none !important;
+    }
+
+    :fullscreen,
+    :fullscreen *,
+    body.fullscreen-active,
+    body.fullscreen-active * {
+      cursor: none !important;
+    }
+
+    .inactive-page {
+      width: 100vw;
+      height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(24px, 6vw, 80px);
+      text-align: center;
+      background: #000;
+    }
+
+    .inactive-card {
+      max-width: 1000px;
+      padding: clamp(28px, 5vw, 64px);
+      border-radius: 34px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.38);
+    }
+
+    .inactive-card h1 {
+      font-size: clamp(3rem, 9vw, 8rem);
+      line-height: 0.95;
+      letter-spacing: -0.06em;
+      margin-bottom: 20px;
+    }
+
+    .inactive-card p {
+      color: var(--muted);
+      font-size: clamp(1.1rem, 2vw, 1.8rem);
+    }
+
+    @media (max-width: 850px) {
+      .control-page,
+      .setup-page,
+      .login-page,
+      .viewer-join-page {
+        padding: 22px;
+      }
+
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .grid,
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app"></div>
+
+  <script type="module">
+    const firebaseConfig = {
+      apiKey: "AIzaSyAK_AQTeJg3kE0BKoNo6ZFSz0P2i6sK4xc",
+      authDomain: "bullis-theatre-clock.firebaseapp.com",
+      databaseURL: "https://bullis-theatre-clock-default-rtdb.firebaseio.com/",
+      projectId: "bullis-theatre-clock",
+      storageBucket: "bullis-theatre-clock.firebasestorage.app",
+      messagingSenderId: "755170958711",
+      appId: "1:755170958711:web:0cdda9f681e33173afd572",
+      measurementId: "G-Y6FY034Q66"
+    };
+
+    const ADMIN_UID = "6LDVBsAORQN9mbngZfLyRkUznQr2";
+    const VIEWER_UID = "Sci1OaYwGNQnoigEPL3tp3HMxMv2";
+    const USER_DOMAIN = "bullis-theatre-clock.local";
+    const VENUE_IMAGE_SRC = "venue-name.png";
+
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js";
+    import {
+      getDatabase,
+      ref,
+      onValue,
+      set,
+      get
+    } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
+
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signInWithEmailAndPassword,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js";
+
+    const TIME_ZONE = "America/New_York";
+
+    const defaultState = {
+      roomActive: true,
+      clockType: "digital",
+      displayMode: "clock",
+      timerType: "countdown",
+      countdownSeconds: 300,
+      timerRunning: false,
+      timerStartedAt: null,
+      timerPausedElapsed: 0,
+      message: "",
+      messageVisible: false,
+      lastUpdated: Date.now()
+    };
+
+    let app;
+    let db;
+    let auth;
+    let roomRef;
+    let unsubscribeRoom = null;
+    let currentUser = null;
+    let currentState = { ...defaultState };
+    let currentRoomExists = false;
+
+    function isViewPage() {
+      return new URLSearchParams(window.location.search).get("view") === "1";
+    }
+
+    function getRoom() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("room") || localStorage.getItem("remote_clock_room") || "main";
+    }
+
+    function setRoom(room) {
+      const clean = room.trim().replace(/[^a-zA-Z0-9_-]/g, "-") || "main";
+      localStorage.setItem("remote_clock_room", clean);
+
+      const params = new URLSearchParams(window.location.search);
+      params.set("room", clean);
+
+      if (isViewPage()) {
+        params.set("view", "1");
+      }
+
+      window.location.search = params.toString();
+    }
+
+    function joinViewerRoom(room) {
+      const clean = room.trim().replace(/[^a-zA-Z0-9_-]/g, "-") || "main";
+      localStorage.setItem("remote_clock_room", clean);
+
+      const url = new URL(window.location.href);
+      url.searchParams.set("view", "1");
+      url.searchParams.set("room", clean);
+      window.location.href = url.toString();
+    }
+
+    function getViewURL() {
+      const url = new URL(window.location.href);
+      url.searchParams.set("view", "1");
+      url.searchParams.set("room", getRoom());
+      return url.toString();
+    }
+
+    function getControlURL() {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("view");
+      url.searchParams.set("room", getRoom());
+      return url.toString();
+    }
+
+    function getRole() {
+      if (!currentUser) return "none";
+      if (currentUser.uid === ADMIN_UID) return "admin";
+      if (currentUser.uid === VIEWER_UID) return "viewer";
+      return "unauthorized";
+    }
+
+    function canWrite() {
+      return getRole() === "admin";
+    }
+
+    function usernameToEmail(username) {
+      const clean = String(username || "").trim().toLowerCase();
+
+      if (clean.includes("@")) {
+        return clean;
+      }
+
+      return `${clean}@${USER_DOMAIN}`;
+    }
+
+    async function saveState(patch) {
+      if (!canWrite()) {
+        alert("Viewer access only. Log in as admin to change settings.");
+        return;
+      }
+
+      currentState = {
+        ...currentState,
+        ...patch,
+        lastUpdated: Date.now()
+      };
+
+      await set(roomRef, currentState);
+    }
+
+    function formatTimer(totalSeconds) {
+      const abs = Math.abs(Math.floor(totalSeconds));
+      const hours = Math.floor(abs / 3600);
+      const minutes = Math.floor((abs % 3600) / 60);
+      const seconds = abs % 60;
+
+      if (hours > 0) {
+        return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+      }
+
+      return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    }
+
+    function getElapsedSeconds(state) {
+      const paused = state.timerPausedElapsed || 0;
+
+      if (!state.timerRunning || !state.timerStartedAt) {
+        return paused;
+      }
+
+      return paused + Math.floor((Date.now() - state.timerStartedAt) / 1000);
+    }
+
+    function getTimerSeconds(state) {
+      const elapsed = getElapsedSeconds(state);
+
+      if (state.timerType === "countdown") {
+        return Math.max(0, state.countdownSeconds - elapsed);
+      }
+
+      return elapsed;
+    }
+
+    function getEastCoastParts() {
+      const formatter = new Intl.DateTimeFormat("en-US", {
+        timeZone: TIME_ZONE,
+        hour: "numeric",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true
+      });
+
+      const parts = formatter.formatToParts(new Date());
+      const get = type => parts.find(part => part.type === type)?.value;
+
+      return {
+        hour: Number(get("hour")),
+        minute: Number(get("minute")),
+        second: Number(get("second")),
+        dayPeriod: get("dayPeriod") || ""
+      };
+    }
+
+    function getEastCoastDigitalTime() {
+      const parts = getEastCoastParts();
+
+      return `${parts.hour}:${String(parts.minute).padStart(2, "0")}:${String(parts.second).padStart(2, "0")} ${parts.dayPeriod}`;
+    }
+
+    function getEastCoastAngles() {
+      const parts = getEastCoastParts();
+      const hour12 = parts.hour % 12;
+
+      return {
+        hourAngle: hour12 * 30 + parts.minute * 0.5 + parts.second * (0.5 / 60),
+        minuteAngle: parts.minute * 6 + parts.second * 0.1,
+        secondAngle: parts.second * 6
+      };
+    }
+
+    function escapeHTML(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function userIsTyping() {
+      const el = document.activeElement;
+
+      if (!el) {
+        return false;
+      }
+
+      const tag = el.tagName;
+
+      return tag === "TEXTAREA" || (tag === "INPUT" && !el.readOnly);
+    }
+
+    function getTextSizeClass(message) {
+      const text = String(message || "").trim();
+
+      if (!text) {
+        return "text-short";
+      }
+
+      const words = text.split(/\s+/).length;
+      const chars = text.length;
+      const manualLines = text.split(/\n/).length;
+
+      if (manualLines <= 1 && words <= 5 && chars <= 45) {
+        return "text-short";
+      }
+
+      if (manualLines <= 2 && words <= 14 && chars <= 95) {
+        return "text-medium";
+      }
+
+      if (manualLines <= 4 && words <= 34 && chars <= 220) {
+        return "text-long";
+      }
+
+      return "text-xlong";
+    }
+
+    function renderLoginPage(message = "") {
       document.getElementById("app").innerHTML = `
-        <main class="viewer-join-page">
-          <div class="viewer-join-wrap">
+        <main class="login-page">
+          <div class="login-wrap">
             <section class="card full" style="width: 100%;">
               <h1 style="font-size: clamp(2rem, 5vw, 3.4rem); line-height: 1; letter-spacing: -0.04em; margin-bottom: 14px;">
-                Join Display Room
+                Bullis Theatre Clock
               </h1>
 
-              <p>Enter the room code to view that display feed.</p>
+              <p>Log in to view or control the clock display.</p>
 
               <div class="form-row" style="grid-template-columns: 1fr; margin-top: 22px;">
                 <label class="small-label">
-                  Room Code
-                  <input id="viewerRoomInput" type="text" value="${escapeHTML(savedRoom)}" placeholder="Example: auditorium2026">
+                  Username
+                  <input id="loginUsername" type="text" placeholder="admin or viewer" autocomplete="username">
+                </label>
+
+                <label class="small-label">
+                  Password
+                  <input id="loginPassword" type="password" placeholder="Password" autocomplete="current-password">
                 </label>
               </div>
 
               <div class="button-row">
-                <button class="btn green" id="joinRoomBtn">Join Room</button>
-                <button class="btn red" id="logoutBtn">Log Out</button>
+                <button class="btn green" id="loginBtn">Log In</button>
               </div>
 
               <div class="warning">
-                Viewer mode only displays the room feed. It cannot change clock, timer, text, or room settings.
+                Use <strong>admin</strong> for full control or <strong>viewer</strong> for display-only access.
+              </div>
+
+              <div class="error-text" id="loginError" style="${message ? "display:block;" : ""}">
+                ${escapeHTML(message)}
               </div>
             </section>
           </div>
         </main>
       `;
 
-      document.getElementById("joinRoomBtn").addEventListener("click", () => {
-        joinViewerRoom(document.getElementById("viewerRoomInput").value);
-      });
+      document.getElementById("loginBtn").addEventListener("click", handleLogin);
 
-      document.getElementById("viewerRoomInput").addEventListener("keydown", event => {
+      document.getElementById("loginPassword").addEventListener("keydown", event => {
         if (event.key === "Enter") {
-          joinViewerRoom(document.getElementById("viewerRoomInput").value);
+          handleLogin();
         }
       });
+    }
+
+    async function handleLogin() {
+      const username = document.getElementById("loginUsername").value;
+      const password = document.getElementById("loginPassword").value;
+      const email = usernameToEmail(username);
+
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+      } catch (error) {
+        renderLoginPage("Login failed. Check the username and password.");
+      }
+    }
+
+    function renderUnauthorizedPage() {
+      document.getElementById("app").innerHTML = `
+        <main class="login-page">
+          <div class="login-wrap">
+            <section class="card full">
+              <h1 style="font-size: clamp(2rem, 5vw, 3.4rem); margin-bottom: 14px;">
+                Not Authorized
+              </h1>
+
+              <p>This account is not allowed to use this clock system.</p>
+
+              <div class="button-row">
+                <button class="btn red" id="logoutBtn">Log Out</button>
+              </div>
+            </section>
+          </div>
+        </main>
+      `;
 
       document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
-    }'''
+    }
 
-new = '''    function renderViewerJoinPage() {
+    function renderErrorPage(errorMessage) {
+      document.getElementById("app").innerHTML = `
+        <main class="setup-page">
+          <div class="wrap">
+            <section class="card full">
+              <h1 style="font-size: clamp(2rem, 4vw, 3.5rem); margin-bottom: 18px;">
+                Firebase Connection Error
+              </h1>
+
+              <p>The website loaded, but it could not connect to Firebase.</p>
+
+              <br>
+
+              <div class="warning">${escapeHTML(errorMessage)}</div>
+            </section>
+          </div>
+        </main>
+      `;
+    }
+
+    function renderViewerJoinPage() {
       document.getElementById("app").innerHTML = `
         <main class="viewer-join-page">
           <div class="viewer-join-wrap">
@@ -105,17 +1163,583 @@ new = '''    function renderViewerJoinPage() {
       });
 
       document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
-    }'''
+    }
 
-if old not in code:
-    raise ValueError("Old renderViewerJoinPage function not found.")
-code = code.replace(old, new)
+    function goBackToViewerJoin() {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("view");
+      window.location.href = url.toString();
+    }
 
-# Ensure only actual HTML
-start = code.find("<!DOCTYPE html>")
-end = code.rfind("</html>") + len("</html>")
-code = code[start:end]
+    async function requestViewerFullscreen() {
+      try {
+        if (!document.fullscreenElement) {
+          await document.documentElement.requestFullscreen();
+        }
+      } catch (error) {
+        console.warn("Fullscreen request failed:", error);
+      }
+    }
 
-dst = Path("/mnt/data/index_viewer_room_empty_final.html")
-dst.write_text(code, encoding="utf-8")
-print(dst)
+    function addFullscreenEvents() {
+      const button = document.getElementById("fullscreenBtn");
+
+      if (button) {
+        button.addEventListener("click", requestViewerFullscreen);
+      }
+    }
+
+    function renderInactiveRoomPage() {
+      document.getElementById("app").innerHTML = `
+        <main class="inactive-page">
+          <button class="fullscreen-btn" id="fullscreenBtn">Full Screen</button>
+
+          <section class="inactive-card">
+            <h1>Room Not Active</h1>
+
+            <p>
+              This room is currently deactivated or unavailable. Please check the room code or contact the controller.
+            </p>
+
+            <div class="button-row" style="justify-content: center; margin-top: 28px;">
+              <button class="btn secondary" id="backToRoomBtn">Back to Room Code</button>
+            </div>
+          </section>
+        </main>
+      `;
+
+      document.getElementById("backToRoomBtn").addEventListener("click", goBackToViewerJoin);
+      addFullscreenEvents();
+    }
+
+    function renderControlPage() {
+      const state = currentState;
+      const countdownMinutes = Math.floor((state.countdownSeconds || 0) / 60);
+      const countdownSeconds = (state.countdownSeconds || 0) % 60;
+      const active = state.roomActive !== false;
+      const admin = canWrite();
+      const disabled = admin ? "" : "disabled";
+      const disabledClass = admin ? "" : "disabled";
+
+      document.getElementById("app").innerHTML = `
+        <main class="control-page">
+          <div class="wrap">
+            <header class="header">
+              <div>
+                <h1>Remote Clock Control</h1>
+
+                <p>
+                  Admin can change settings and activate/deactivate the room. Viewer accounts only join a room and see its feed.
+                </p>
+              </div>
+
+              <div>
+                <a class="open-view" href="${getViewURL()}" target="_blank">Open View Page</a>
+
+                <div class="button-row" style="justify-content: flex-end;">
+                  <span class="role-pill">${getRole().toUpperCase()} MODE</span>
+                  <button class="btn red" id="logoutBtn">Log Out</button>
+                </div>
+              </div>
+            </header>
+
+            <section class="grid">
+              <div class="card full">
+                <h2>Room Code</h2>
+
+                <p>This connects your control page to your display page. Use the same room on both pages.</p>
+
+                <div class="form-row">
+                  <label class="small-label">
+                    Room Code
+                    <input id="roomInput" type="text" value="${escapeHTML(getRoom())}">
+                  </label>
+
+                  <label class="small-label">
+                    Control Link
+                    <input type="text" value="${escapeHTML(getControlURL())}" readonly>
+                  </label>
+
+                  <label class="small-label">
+                    View Link
+                    <input type="text" value="${escapeHTML(getViewURL())}" readonly>
+                  </label>
+                </div>
+
+                <div class="button-row">
+                  <button class="btn" id="setRoomBtn">Use This Room</button>
+                  <button class="btn secondary" id="copyViewBtn">Copy View Link</button>
+                </div>
+              </div>
+
+              <div class="card full">
+                <h2>Room Status</h2>
+
+                <p>
+                  When the room is active, viewers can join and see the feed. When it is deactivated, viewers will only see a room-not-active message.
+                </p>
+
+                <div class="button-row">
+                  <span class="active-pill ${active ? "on" : "off"}">
+                    <span class="status-dot ${active ? "" : "red"}"></span>
+                    ${active ? "ROOM ACTIVE" : "ROOM DEACTIVATED"}
+                  </span>
+
+                  <button class="btn ${active ? "red" : "green"}" id="toggleRoomActiveBtn" ${disabled}>
+                    ${active ? "Deactivate Room" : "Activate Room"}
+                  </button>
+                </div>
+              </div>
+
+              <div class="card">
+                <h2>1. Choose Clock Type</h2>
+
+                <div class="option-group">
+                  <label class="radio-card ${disabledClass}">
+                    <input type="radio" name="clockType" value="digital" ${state.clockType === "digital" ? "checked" : ""} ${disabled}>
+
+                    <div>
+                      <strong>Digital Clock</strong>
+                      <span>Digital Clock</span>
+                    </div>
+                  </label>
+
+                  <label class="radio-card ${disabledClass}">
+                    <input type="radio" name="clockType" value="analog" ${state.clockType === "analog" ? "checked" : ""} ${disabled}>
+
+                    <div>
+                      <strong>Analog Clock</strong>
+                      <span>Analog Clock</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div class="card">
+                <h2>2. Choose Display Mode</h2>
+
+                <div class="option-group">
+                  <label class="radio-card ${disabledClass}">
+                    <input type="radio" name="displayMode" value="clock" ${state.displayMode === "clock" ? "checked" : ""} ${disabled}>
+
+                    <div>
+                      <strong>Clock Only</strong>
+                      <span>Shows the selected clock full screen.</span>
+                    </div>
+                  </label>
+
+                  <label class="radio-card ${disabledClass}">
+                    <input type="radio" name="displayMode" value="combo" ${state.displayMode === "combo" ? "checked" : ""} ${disabled}>
+
+                    <div>
+                      <strong>Clock + Timer</strong>
+                      <span>Shows the selected clock with count up or count down below it.</span>
+                    </div>
+                  </label>
+
+                  <label class="radio-card ${disabledClass}">
+                    <input type="radio" name="displayMode" value="timer" ${state.displayMode === "timer" ? "checked" : ""} ${disabled}>
+
+                    <div>
+                      <strong>Timer Only</strong>
+                      <span>Shows count up or count down full screen.</span>
+                    </div>
+                  </label>
+
+                  <label class="radio-card ${disabledClass}">
+                    <input type="radio" name="displayMode" value="venue" ${state.displayMode === "venue" ? "checked" : ""} ${disabled}>
+
+                    <div>
+                      <strong>Venue Name</strong>
+                      <span>Shows the venue image full screen.</span>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
+              <div class="card">
+                <h2>3. Timer Settings</h2>
+
+                <div class="option-group">
+                  <label class="radio-card ${disabledClass}">
+                    <input type="radio" name="timerType" value="countdown" ${state.timerType === "countdown" ? "checked" : ""} ${disabled}>
+
+                    <div>
+                      <strong>Count Down</strong>
+                      <span>Counts down from the time you choose.</span>
+                    </div>
+                  </label>
+
+                  <label class="radio-card ${disabledClass}">
+                    <input type="radio" name="timerType" value="countup" ${state.timerType === "countup" ? "checked" : ""} ${disabled}>
+
+                    <div>
+                      <strong>Count Up</strong>
+                      <span>Counts up from zero.</span>
+                    </div>
+                  </label>
+                </div>
+
+                <div class="form-row">
+                  <label class="small-label">
+                    Minutes
+                    <input id="minutesInput" type="number" min="0" value="${countdownMinutes}" ${disabled}>
+                  </label>
+
+                  <label class="small-label">
+                    Seconds
+                    <input id="secondsInput" type="number" min="0" max="59" value="${countdownSeconds}" ${disabled}>
+                  </label>
+
+                  <label class="small-label">
+                    Current Timer
+                    <input id="currentTimerInput" type="text" value="${formatTimer(getTimerSeconds(state))}" readonly>
+                  </label>
+                </div>
+
+                <div class="button-row">
+                  <button class="btn" id="applyTimeBtn" ${disabled}>Apply Time</button>
+                  <button class="btn green" id="startPauseBtn" ${disabled}>${state.timerRunning ? "Pause" : "Start"}</button>
+                  <button class="btn secondary" id="resetBtn" ${disabled}>Reset</button>
+                </div>
+              </div>
+
+              <div class="card">
+                <h2>4. Screen Text</h2>
+
+                <textarea id="messageInput" placeholder="Type words to show on the view screen..." ${disabled}>${state.message || ""}</textarea>
+
+                <div class="button-row">
+                  <button class="btn ${state.messageVisible ? "green" : "red"}" id="showHideBtn" ${disabled}>
+                    ${state.messageVisible ? "Hide" : "Show"}
+                  </button>
+
+                  <button class="btn secondary" id="clearTextBtn" ${disabled}>Clear Text</button>
+                </div>
+
+                <div class="status-pill">
+                  <span class="status-dot"></span>
+
+                  <span>
+                    ${state.messageVisible ? "Text is showing. The clock or timer will shrink and move higher." : "Text is hidden. The clock or timer is full screen."}
+                  </span>
+                </div>
+              </div>
+            </section>
+          </div>
+        </main>
+      `;
+
+      attachControlEvents();
+    }
+
+    function attachControlEvents() {
+      document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
+
+      document.getElementById("setRoomBtn").addEventListener("click", () => {
+        setRoom(document.getElementById("roomInput").value);
+      });
+
+      document.getElementById("copyViewBtn").addEventListener("click", async () => {
+        await navigator.clipboard.writeText(getViewURL());
+        alert("View link copied.");
+      });
+
+      if (!canWrite()) {
+        return;
+      }
+
+      document.getElementById("toggleRoomActiveBtn").addEventListener("click", () => {
+        saveState({ roomActive: currentState.roomActive === false });
+      });
+
+      document.querySelectorAll('input[name="clockType"]').forEach(input => {
+        input.addEventListener("change", () => saveState({ clockType: input.value }));
+      });
+
+      document.querySelectorAll('input[name="displayMode"]').forEach(input => {
+        input.addEventListener("change", () => saveState({ displayMode: input.value }));
+      });
+
+      document.querySelectorAll('input[name="timerType"]').forEach(input => {
+        input.addEventListener("change", () => {
+          saveState({
+            timerType: input.value,
+            timerRunning: false,
+            timerPausedElapsed: 0,
+            timerStartedAt: null
+          });
+        });
+      });
+
+      document.getElementById("applyTimeBtn").addEventListener("click", () => {
+        const minutes = Math.max(0, Number(document.getElementById("minutesInput").value) || 0);
+        const seconds = Math.min(59, Math.max(0, Number(document.getElementById("secondsInput").value) || 0));
+
+        saveState({
+          countdownSeconds: minutes * 60 + seconds,
+          timerRunning: false,
+          timerPausedElapsed: 0,
+          timerStartedAt: null
+        });
+      });
+
+      document.getElementById("startPauseBtn").addEventListener("click", () => {
+        if (currentState.timerRunning) {
+          saveState({
+            timerRunning: false,
+            timerPausedElapsed: getElapsedSeconds(currentState),
+            timerStartedAt: null
+          });
+        } else {
+          saveState({
+            timerRunning: true,
+            timerStartedAt: Date.now()
+          });
+        }
+      });
+
+      document.getElementById("resetBtn").addEventListener("click", () => {
+        saveState({
+          timerRunning: false,
+          timerPausedElapsed: 0,
+          timerStartedAt: null
+        });
+      });
+
+      document.getElementById("messageInput").addEventListener("input", event => {
+        currentState.message = event.target.value;
+      });
+
+      document.getElementById("showHideBtn").addEventListener("click", () => {
+        const text = document.getElementById("messageInput").value;
+
+        saveState({
+          message: text,
+          messageVisible: !currentState.messageVisible
+        });
+      });
+
+      document.getElementById("clearTextBtn").addEventListener("click", () => {
+        saveState({
+          message: "",
+          messageVisible: false
+        });
+      });
+    }
+
+    function createAnalogClock() {
+      const numbers = Array.from({ length: 12 }, (_, index) => {
+        const number = index + 1;
+        const angle = number * 30;
+        const x = 50 + Math.sin(angle * Math.PI / 180) * 40;
+        const y = 50 - Math.cos(angle * Math.PI / 180) * 40;
+
+        return `<div class="clock-number" style="--x:${x}%; --y:${y}%;">${number}</div>`;
+      }).join("");
+
+      return `
+        <div>
+          <div class="analog-clock">
+            ${numbers}
+            <div class="hand hour" id="hourHand"></div>
+            <div class="hand minute" id="minuteHand"></div>
+            <div class="hand second" id="secondHand"></div>
+            <div class="center-dot"></div>
+          </div>
+
+          <div class="timezone-label">New York Time</div>
+        </div>
+      `;
+    }
+
+    function createClockHTML(state) {
+      if (state.clockType === "analog") {
+        return createAnalogClock();
+      }
+
+      return `
+        <div>
+          <div class="digital-clock" id="digitalClock">--:--:--</div>
+          <div class="timezone-label">New York Time</div>
+        </div>
+      `;
+    }
+
+    function createTimerHTML(state) {
+      return `
+        <div>
+          <div class="timer-display" id="timerDisplay">${formatTimer(getTimerSeconds(state))}</div>
+          <div class="timer-label">${state.timerType === "countdown" ? "Countdown" : "Count Up"}</div>
+        </div>
+      `;
+    }
+
+    function createVenueHTML() {
+      return `
+        <div class="venue-display">
+          <img src="${VENUE_IMAGE_SRC}" alt="Bullis Howard Auditorium venue name">
+        </div>
+      `;
+    }
+
+    function renderViewPage() {
+      if (!currentRoomExists || currentState.roomActive === false) {
+        renderInactiveRoomPage();
+        return;
+      }
+
+      const state = currentState;
+      const hasVisibleMessage =
+        state.displayMode !== "venue" &&
+        state.messageVisible &&
+        String(state.message || "").trim().length > 0;
+
+      let mainHTML = "";
+      let modeClass = "";
+
+      if (state.displayMode === "venue") {
+        modeClass = "venue-mode";
+        mainHTML = createVenueHTML();
+      } else if (state.displayMode === "clock") {
+        mainHTML = createClockHTML(state);
+      } else if (state.displayMode === "timer") {
+        mainHTML = createTimerHTML(state);
+      } else {
+        modeClass = "combo";
+        mainHTML = createClockHTML(state) + createTimerHTML(state);
+      }
+
+      document.getElementById("app").innerHTML = `
+        <main class="view-page">
+          <button class="fullscreen-btn" id="fullscreenBtn">Full Screen</button>
+          <div class="fullscreen-hint">Press F for fullscreen</div>
+
+          <section class="view-stage ${hasVisibleMessage ? `text-active ${getTextSizeClass(state.message)}` : ""}">
+            <div class="main-display ${modeClass}">
+              ${mainHTML}
+            </div>
+
+            <div class="message-display">${escapeHTML(state.message || "")}</div>
+          </section>
+        </main>
+      `;
+
+      updateViewDisplays();
+      addFullscreenEvents();
+    }
+
+    function updateViewDisplays() {
+      const digitalClock = document.getElementById("digitalClock");
+
+      if (digitalClock) {
+        digitalClock.textContent = getEastCoastDigitalTime();
+      }
+
+      const hourHand = document.getElementById("hourHand");
+      const minuteHand = document.getElementById("minuteHand");
+      const secondHand = document.getElementById("secondHand");
+
+      if (hourHand && minuteHand && secondHand) {
+        const angles = getEastCoastAngles();
+
+        hourHand.style.transform = `rotate(${angles.hourAngle}deg)`;
+        minuteHand.style.transform = `rotate(${angles.minuteAngle}deg)`;
+        secondHand.style.transform = `rotate(${angles.secondAngle}deg)`;
+      }
+
+      const timerDisplay = document.getElementById("timerDisplay");
+
+      if (timerDisplay) {
+        timerDisplay.textContent = formatTimer(getTimerSeconds(currentState));
+      }
+
+      const currentTimerInput = document.getElementById("currentTimerInput");
+
+      if (currentTimerInput) {
+        currentTimerInput.value = formatTimer(getTimerSeconds(currentState));
+      }
+    }
+
+    async function connectRoom() {
+      if (unsubscribeRoom) {
+        unsubscribeRoom();
+      }
+
+      roomRef = ref(db, `rooms/${getRoom()}/state`);
+
+      const snapshot = await get(roomRef);
+      currentRoomExists = snapshot.exists();
+
+      if (!currentRoomExists && canWrite()) {
+        currentState = { ...defaultState, roomActive: true };
+        await set(roomRef, currentState);
+        currentRoomExists = true;
+      }
+
+      unsubscribeRoom = onValue(roomRef, snapshot => {
+        currentRoomExists = snapshot.exists();
+
+        if (currentRoomExists) {
+          currentState = { ...defaultState, ...(snapshot.val() || {}) };
+        } else {
+          currentState = { ...defaultState, roomActive: false };
+        }
+
+        if (isViewPage()) {
+          renderViewPage();
+        } else if (getRole() === "viewer") {
+          renderViewerJoinPage();
+        } else if (!userIsTyping()) {
+          renderControlPage();
+        }
+      });
+    }
+
+    async function startApp() {
+      try {
+        app = initializeApp(firebaseConfig);
+        db = getDatabase(app);
+        auth = getAuth(app);
+
+        onAuthStateChanged(auth, async user => {
+          currentUser = user;
+
+          if (!user) {
+            renderLoginPage();
+            return;
+          }
+
+          if (getRole() === "unauthorized") {
+            renderUnauthorizedPage();
+            return;
+          }
+
+          if (getRole() === "viewer" && !isViewPage()) {
+            renderViewerJoinPage();
+            return;
+          }
+
+          await connectRoom();
+        });
+
+        setInterval(updateViewDisplays, 250);
+      } catch (error) {
+        renderErrorPage(error.message || String(error));
+      }
+    }
+
+    document.addEventListener("keydown", event => {
+      if (isViewPage() && event.key && event.key.toLowerCase() === "f") {
+        requestViewerFullscreen();
+      }
+    });
+
+    document.addEventListener("fullscreenchange", () => {
+      document.body.classList.toggle("fullscreen-active", !!document.fullscreenElement);
+    });
+
+    startApp();
+  </script>
+</body>
+</html>
