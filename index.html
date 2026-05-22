@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
   <title>Bullis Theatre Clock</title>
 
   <style>
@@ -21,7 +20,7 @@
       --blue: #3b82f6;
       --red: #ef4444;
       --green: #22c55e;
-      --yellow: #facc15;
+      --gold: #facc15;
     }
 
     html,
@@ -50,10 +49,38 @@
     .setup-page {
       min-height: 100vh;
       padding: 36px;
+      position: relative;
       background:
-        radial-gradient(circle at top left, rgba(59, 130, 246, 0.24), transparent 32%),
-        radial-gradient(circle at bottom right, rgba(239, 68, 68, 0.16), transparent 32%),
+        radial-gradient(circle at top left, rgba(59, 130, 246, 0.28), transparent 34%),
+        radial-gradient(circle at bottom right, rgba(250, 204, 21, 0.22), transparent 36%),
         var(--bg);
+    }
+
+    .control-page::after,
+    .login-page::after,
+    .viewer-join-page::after,
+    .setup-page::after {
+      content: "";
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      width: clamp(80px, 9vw, 145px);
+      aspect-ratio: 1 / 1;
+      background-image: url("SecondaryBulldogFullColor.png");
+      background-size: contain;
+      background-position: center;
+      background-repeat: no-repeat;
+      opacity: 0.92;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .control-page > *,
+    .login-page > *,
+    .viewer-join-page > *,
+    .setup-page > * {
+      position: relative;
+      z-index: 1;
     }
 
     .wrap {
