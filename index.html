@@ -838,7 +838,9 @@
       ref,
       onValue,
       set,
-      get
+      get,
+      onDisconnect,
+      serverTimestamp
     } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
 
     import {
@@ -852,6 +854,7 @@
 
     const defaultState = {
       roomActive: true,
+      deactivatedAt: null,
       clockType: "digital",
       displayMode: "clock",
       timerType: "countdown",
@@ -874,6 +877,16 @@
     let currentState = { ...defaultState };
     let currentRoomExists = false;
     let allRooms = {};
+    let adminPresenceRef = null;
+    let adminSessionId = sessionStorage.getItem("admin_session_id");
+
+    if (!adminSessionId) {
+      adminSessionId =
+        (window.crypto && window.crypto.randomUUID && window.crypto.randomUUID()) ||
+        `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+      sessionStorage.setItem("admin_session_id", adminSessionId);
+    }
 
     function isViewPage() {
       return new URLSearchParams(window.location.search).get("view") === "1";
@@ -1564,7 +1577,12 @@
       }
 
       document.getElementById("toggleRoomActiveBtn").addEventListener("click", () => {
-        saveState({ roomActive: currentState.roomActive === false });
+        const shouldActivate = currentState.roomActive === false;
+
+        saveState({
+          roomActive: shouldActivate,
+          deactivatedAt: shouldActivate ? null : Date.now()
+        });
       });
 
       document.querySelectorAll('input[name="clockType"]').forEach(input => {
@@ -1828,6 +1846,33 @@
       });
     }
 
+    async function markAdminControlPageOpen() {
+      if (getRole() !== "admin" || isViewPage()) {
+        return;
+      }
+
+      if (adminPresenceRef) {
+        try {
+          await set(adminPresenceRef, null);
+        } catch (error) {
+          console.warn("Could not clear old admin presence:", error);
+        }
+      }
+
+      adminPresenceRef = ref(
+        db,
+        `presence/admins/${getRoom()}/${currentUser.uid}_${adminSessionId}`
+      );
+
+      await set(adminPresenceRef, {
+        uid: currentUser.uid,
+        room: getRoom(),
+        connectedAt: serverTimestamp()
+      });
+
+      onDisconnect(adminPresenceRef).remove();
+    }
+
     async function startApp() {
       try {
         app = initializeApp(firebaseConfig);
@@ -1854,6 +1899,7 @@
 
           await connectRoom();
           connectRoomsList();
+          await markAdminControlPageOpen();
         });
 
         setInterval(updateViewDisplays, 250);
