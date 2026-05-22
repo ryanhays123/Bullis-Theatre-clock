@@ -370,6 +370,16 @@
       color: #fecaca;
     }
 
+    .viewer-count {
+      margin-top: 4px;
+      font-size: 0.85rem;
+      color: #bfdbfe;
+    }
+
+    .viewer-count strong {
+      color: white;
+    }
+
     .room-actions {
       display: flex;
       align-items: center;
@@ -875,7 +885,9 @@
       onValue,
       set,
       get,
-      update
+      update,
+      onDisconnect,
+      serverTimestamp
     } from "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js";
 
     import {
@@ -908,11 +920,24 @@
     let roomRef;
     let unsubscribeRoom = null;
     let unsubscribeAllRooms = null;
+    let unsubscribeViewerPresence = null;
     let currentUser = null;
     let currentState = { ...defaultState };
     let currentRoomExists = false;
     let allRooms = {};
+    let allViewerPresence = {};
     let cleanupRunning = false;
+    let viewerPresenceRef = null;
+    let trackedViewerRoom = null;
+    let viewerSessionId = sessionStorage.getItem("viewer_session_id");
+
+    if (!viewerSessionId) {
+      viewerSessionId =
+        (window.crypto && window.crypto.randomUUID && window.crypto.randomUUID()) ||
+        `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+      sessionStorage.setItem("viewer_session_id", viewerSessionId);
+    }
 
     function isViewPage() {
       return new URLSearchParams(window.location.search).get("view") === "1";
@@ -1114,6 +1139,10 @@
       return "text-xlong";
     }
 
+    function getViewerCount(roomName) {
+      return Object.keys(allViewerPresence?.[roomName] || {}).length;
+    }
+
     function renderOtherRoomsHTML() {
       const currentRoom = getRoom();
       const rooms = { ...(allRooms || {}) };
@@ -1139,6 +1168,7 @@
             const active = roomState.roomActive !== false;
             const mode = roomState.displayMode || "clock";
             const isCurrent = roomName === currentRoom;
+            const viewerCount = getViewerCount(roomName);
 
             return `
               <div class="room-item">
@@ -1148,6 +1178,7 @@
                     ${isCurrent ? `<span class="current-room-badge">Current</span>` : ""}
                   </div>
                   <div class="room-status">Mode: ${escapeHTML(mode)}</div>
+                  <div class="viewer-count">Current Viewers: <strong>${viewerCount}</strong></div>
                 </div>
 
                 <div class="room-actions">
@@ -1187,7 +1218,11 @@
       }
 
       try {
-        await set(ref(db, `rooms/${roomName}`), null);
+        await update(ref(db), {
+          [`rooms/${roomName}`]: null,
+          [`presence/viewers/${roomName}`]: null
+        });
+
         alert(`Room "${roomName}" was deleted.`);
       } catch (error) {
         alert("Could not delete the room. Check Firebase permissions.");
@@ -1238,6 +1273,7 @@
 
           if (isDeactivated && oldEnough) {
             updates[`rooms/${roomName}`] = null;
+            updates[`presence/viewers/${roomName}`] = null;
           }
         });
 
@@ -1670,7 +1706,7 @@
 
               <div class="card full">
                 <h2>Existing Rooms</h2>
-                <p>All existing rooms are listed here. Active rooms can be closed, and deactivated rooms can be deleted.</p>
+                <p>All existing rooms are listed here. Active rooms can be closed, deactivated rooms can be deleted, and current viewers are counted.</p>
                 ${renderOtherRoomsHTML()}
               </div>
             </section>
@@ -1857,11 +1893,57 @@
       `;
     }
 
+    async function markViewerPageOpen() {
+      if (!isViewPage() || !currentUser) {
+        return;
+      }
+
+      const roomName = getRoom();
+
+      if (trackedViewerRoom === roomName && viewerPresenceRef) {
+        return;
+      }
+
+      await clearViewerPresence();
+
+      trackedViewerRoom = roomName;
+      viewerPresenceRef = ref(
+        db,
+        `presence/viewers/${roomName}/${currentUser.uid}_${viewerSessionId}`
+      );
+
+      await set(viewerPresenceRef, {
+        uid: currentUser.uid,
+        room: roomName,
+        connectedAt: serverTimestamp()
+      });
+
+      onDisconnect(viewerPresenceRef).remove();
+    }
+
+    async function clearViewerPresence() {
+      if (!viewerPresenceRef) {
+        return;
+      }
+
+      try {
+        await set(viewerPresenceRef, null);
+      } catch (error) {
+        console.warn("Could not clear viewer presence:", error);
+      }
+
+      viewerPresenceRef = null;
+      trackedViewerRoom = null;
+    }
+
     function renderViewPage() {
       if (!currentRoomExists || currentState.roomActive === false) {
+        clearViewerPresence();
         renderInactiveRoomPage();
         return;
       }
+
+      markViewerPageOpen();
 
       const state = currentState;
       const hasVisibleMessage =
@@ -1990,6 +2072,24 @@
       });
     }
 
+    function connectViewerPresenceList() {
+      if (unsubscribeViewerPresence) {
+        unsubscribeViewerPresence();
+      }
+
+      if (getRole() !== "admin") {
+        return;
+      }
+
+      unsubscribeViewerPresence = onValue(ref(db, "presence/viewers"), snapshot => {
+        allViewerPresence = snapshot.val() || {};
+
+        if (!isViewPage() && getRole() === "admin" && !userIsTyping()) {
+          renderControlPage();
+        }
+      });
+    }
+
     async function startApp() {
       try {
         app = initializeApp(firebaseConfig);
@@ -2000,22 +2100,26 @@
           currentUser = user;
 
           if (!user) {
+            clearViewerPresence();
             renderLoginPage();
             return;
           }
 
           if (getRole() === "unauthorized") {
+            clearViewerPresence();
             renderUnauthorizedPage();
             return;
           }
 
           if (getRole() === "viewer" && !isViewPage()) {
+            clearViewerPresence();
             renderViewerJoinPage();
             return;
           }
 
           await connectRoom();
           connectRoomsList();
+          connectViewerPresenceList();
         });
 
         setInterval(updateViewDisplays, 250);
@@ -2038,6 +2142,12 @@
 
     document.addEventListener("fullscreenchange", () => {
       document.body.classList.toggle("fullscreen-active", !!document.fullscreenElement);
+    });
+
+    window.addEventListener("beforeunload", () => {
+      if (viewerPresenceRef) {
+        set(viewerPresenceRef, null);
+      }
     });
 
     startApp();
