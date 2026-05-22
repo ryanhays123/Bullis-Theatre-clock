@@ -337,29 +337,38 @@
 
     .room-list {
       display: grid;
-      gap: 10px;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 360px));
+      justify-content: start;
+      gap: 14px;
       margin-top: 16px;
     }
 
     .room-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 13px 15px;
-      border-radius: 16px;
+      display: grid;
+      gap: 10px;
+      padding: 15px;
+      border-radius: 18px;
       background: rgba(255, 255, 255, 0.07);
       border: 1px solid var(--line);
     }
 
+    .room-topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
     .room-name {
-      font-weight: 800;
+      font-weight: 900;
       color: white;
+      font-size: 1rem;
     }
 
     .room-status {
       font-size: 0.85rem;
       color: var(--muted);
+      white-space: nowrap;
     }
 
     .room-status.active {
@@ -370,19 +379,31 @@
       color: #fecaca;
     }
 
-    .viewer-count {
-      margin-top: 4px;
-      font-size: 0.85rem;
-      color: #bfdbfe;
+    .room-meta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
     }
 
-    .viewer-count strong {
+    .room-meta-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.07);
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .room-meta-pill strong {
       color: white;
     }
 
     .room-actions {
       display: flex;
       align-items: center;
+      justify-content: flex-end;
       gap: 10px;
     }
 
@@ -747,26 +768,41 @@
       display: block;
     }
 
-    .fullscreen-btn {
+    .viewer-top-buttons {
       position: fixed;
       top: 16px;
       right: 16px;
       z-index: 9999;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .fullscreen-btn,
+    .exit-view-btn {
       padding: 10px 14px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.12);
-      border: 1px solid rgba(255, 255, 255, 0.22);
       color: white;
       font-weight: 800;
       font-size: 0.9rem;
       backdrop-filter: blur(10px);
-      opacity: 0.55;
+      opacity: 0.72;
       transition: opacity 0.2s ease, background 0.2s ease;
     }
 
-    .fullscreen-btn:hover {
+    .fullscreen-btn {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+    }
+
+    .exit-view-btn {
+      background: rgba(239, 68, 68, 0.72);
+      border: 1px solid rgba(248, 113, 113, 0.45);
+    }
+
+    .fullscreen-btn:hover,
+    .exit-view-btn:hover {
       opacity: 1;
-      background: rgba(255, 255, 255, 0.2);
     }
 
     .fullscreen-hint {
@@ -781,9 +817,9 @@
       pointer-events: none;
     }
 
-    :fullscreen .fullscreen-btn,
+    :fullscreen .viewer-top-buttons,
     :fullscreen .fullscreen-hint,
-    body.fullscreen-active .fullscreen-btn,
+    body.fullscreen-active .viewer-top-buttons,
     body.fullscreen-active .fullscreen-hint {
       display: none !important;
     }
@@ -845,14 +881,12 @@
         grid-template-columns: 1fr;
       }
 
-      .room-item {
-        align-items: flex-start;
-        flex-direction: column;
+      .room-list {
+        grid-template-columns: 1fr;
       }
 
       .room-actions {
-        width: 100%;
-        justify-content: space-between;
+        justify-content: flex-start;
       }
     }
   </style>
@@ -1172,20 +1206,23 @@
 
             return `
               <div class="room-item">
-                <div>
+                <div class="room-topline">
                   <div class="room-name">
                     ${escapeHTML(roomName)}
                     ${isCurrent ? `<span class="current-room-badge">Current</span>` : ""}
                   </div>
-                  <div class="room-status">Mode: ${escapeHTML(mode)}</div>
-                  <div class="viewer-count">Current Viewers: <strong>${viewerCount}</strong></div>
-                </div>
 
-                <div class="room-actions">
                   <div class="room-status ${active ? "active" : "inactive"}">
                     ${active ? "Active" : "Deactivated"}
                   </div>
+                </div>
 
+                <div class="room-meta-row">
+                  <div class="room-meta-pill">Mode: <strong>${escapeHTML(mode)}</strong></div>
+                  <div class="room-meta-pill">Current Viewers: <strong>${viewerCount}</strong></div>
+                </div>
+
+                <div class="room-actions">
                   ${active ? `
                     <button class="btn red close-room-btn" data-room="${escapeHTML(roomName)}">
                       Close
@@ -1459,17 +1496,26 @@
     }
 
     function addFullscreenEvents() {
-      const button = document.getElementById("fullscreenBtn");
+      const fullscreenButton = document.getElementById("fullscreenBtn");
 
-      if (button) {
-        button.addEventListener("click", requestViewerFullscreen);
+      if (fullscreenButton) {
+        fullscreenButton.addEventListener("click", requestViewerFullscreen);
+      }
+
+      const exitButton = document.getElementById("exitViewBtn");
+
+      if (exitButton) {
+        exitButton.addEventListener("click", goBackToViewerJoin);
       }
     }
 
     function renderInactiveRoomPage() {
       document.getElementById("app").innerHTML = `
         <main class="inactive-page">
-          <button class="fullscreen-btn" id="fullscreenBtn">Full Screen</button>
+          <div class="viewer-top-buttons">
+            <button class="exit-view-btn" id="exitViewBtn">Exit</button>
+            <button class="fullscreen-btn" id="fullscreenBtn">Full Screen</button>
+          </div>
 
           <section class="inactive-card">
             <h1>Room Not Active</h1>
@@ -1968,7 +2014,11 @@
 
       document.getElementById("app").innerHTML = `
         <main class="view-page">
-          <button class="fullscreen-btn" id="fullscreenBtn">Full Screen</button>
+          <div class="viewer-top-buttons">
+            <button class="exit-view-btn" id="exitViewBtn">Exit</button>
+            <button class="fullscreen-btn" id="fullscreenBtn">Full Screen</button>
+          </div>
+
           <div class="fullscreen-hint">Press F for fullscreen</div>
 
           <section class="view-stage ${hasVisibleMessage ? `text-active ${getTextSizeClass(state.message)}` : ""}">
