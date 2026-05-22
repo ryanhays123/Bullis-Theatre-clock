@@ -348,8 +348,17 @@
       gap: 10px;
       padding: 15px;
       border-radius: 18px;
-      background: rgba(255, 255, 255, 0.07);
       border: 1px solid var(--line);
+    }
+
+    .room-item.other-room-card {
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .room-item.current-room-card {
+      background: rgba(59, 130, 246, 0.16);
+      border-color: rgba(96, 165, 250, 0.45);
+      box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.18);
     }
 
     .room-topline {
@@ -979,7 +988,27 @@
 
     function getRoom() {
       const params = new URLSearchParams(window.location.search);
-      return params.get("room") || localStorage.getItem("remote_clock_room") || "main";
+      const room = params.get("room");
+
+      if (!room) {
+        return "";
+      }
+
+      return room.trim().replace(/[^a-zA-Z0-9_-]/g, "-");
+    }
+
+    function hasCurrentRoom() {
+      return Boolean(getRoom() && currentRoomExists);
+    }
+
+    function goToNoRoom() {
+      localStorage.removeItem("remote_clock_room");
+
+      const url = new URL(window.location.href);
+      url.searchParams.delete("room");
+      url.searchParams.delete("view");
+
+      window.location.href = url.toString();
     }
 
     function setRoom(room) {
@@ -1008,15 +1037,31 @@
 
     function getViewURL() {
       const url = new URL(window.location.href);
+      const room = getRoom();
+
+      if (!room) {
+        url.searchParams.delete("view");
+        url.searchParams.delete("room");
+        return url.toString();
+      }
+
       url.searchParams.set("view", "1");
-      url.searchParams.set("room", getRoom());
+      url.searchParams.set("room", room);
       return url.toString();
     }
 
     function getControlURL() {
       const url = new URL(window.location.href);
+      const room = getRoom();
+
       url.searchParams.delete("view");
-      url.searchParams.set("room", getRoom());
+
+      if (room) {
+        url.searchParams.set("room", room);
+      } else {
+        url.searchParams.delete("room");
+      }
+
       return url.toString();
     }
 
@@ -1144,7 +1189,17 @@
 
       const tag = el.tagName;
 
-      return tag === "TEXTAREA" || (tag === "INPUT" && !el.readOnly);
+      if (tag === "TEXTAREA") {
+        return true;
+      }
+
+      if (tag !== "INPUT") {
+        return false;
+      }
+
+      const type = (el.type || "").toLowerCase();
+
+      return ["text", "password", "number", "email", "search", "tel", "url"].includes(type);
     }
 
     function getTextSizeClass(message) {
@@ -1181,8 +1236,11 @@
       const currentRoom = getRoom();
       const rooms = { ...(allRooms || {}) };
 
-      if (!rooms[currentRoom] && currentRoomExists) {
-        rooms[currentRoom] = { state: currentState };
+      if (currentRoom && currentRoomExists) {
+        rooms[currentRoom] = {
+          ...(rooms[currentRoom] || {}),
+          state: currentState
+        };
       }
 
       const roomNames = Object.keys(rooms).sort((a, b) => {
@@ -1201,11 +1259,11 @@
             const roomState = rooms[roomName]?.state || {};
             const active = roomState.roomActive !== false;
             const mode = roomState.displayMode || "clock";
-            const isCurrent = roomName === currentRoom;
+            const isCurrent = currentRoom && roomName === currentRoom;
             const viewerCount = getViewerCount(roomName);
 
             return `
-              <div class="room-item">
+              <div class="room-item ${isCurrent ? "current-room-card" : "other-room-card"}">
                 <div class="room-topline">
                   <div class="room-name">
                     ${escapeHTML(roomName)}
@@ -1261,6 +1319,10 @@
         });
 
         alert(`Room "${roomName}" was deleted.`);
+
+        if (roomName === getRoom()) {
+          goToNoRoom();
+        }
       } catch (error) {
         alert("Could not delete the room. Check Firebase permissions.");
         console.error(error);
@@ -1378,7 +1440,16 @@
       const email = usernameToEmail(username);
 
       try {
-        await signInWithEmailAndPassword(auth, email, password);
+        const credential = await signInWithEmailAndPassword(auth, email, password);
+
+        if (credential.user.uid === ADMIN_UID) {
+          localStorage.removeItem("remote_clock_room");
+
+          const url = new URL(window.location.href);
+          url.searchParams.delete("room");
+          url.searchParams.delete("view");
+          window.history.replaceState({}, "", url.toString());
+        }
       } catch (error) {
         renderLoginPage("Login failed. Check the username and password.");
       }
@@ -1537,12 +1608,169 @@
 
     function renderControlPage() {
       const state = currentState;
+      const inRoom = hasCurrentRoom();
       const countdownMinutes = Math.floor((state.countdownSeconds || 0) / 60);
       const countdownSeconds = (state.countdownSeconds || 0) % 60;
       const active = state.roomActive !== false;
       const admin = canWrite();
       const disabled = admin ? "" : "disabled";
       const disabledClass = admin ? "" : "disabled";
+
+      const controlsHTML = inRoom ? `
+        <div class="card full">
+          <h2>Room Status</h2>
+
+          <p>
+            When the room is active, viewers can join and see the feed. When it is deactivated, viewers will only see a room-not-active message.
+          </p>
+
+          <div class="button-row">
+            <span class="active-pill ${active ? "on" : "off"}">
+              <span class="status-dot ${active ? "" : "red"}"></span>
+              ${active ? "ROOM ACTIVE" : "ROOM DEACTIVATED"}
+            </span>
+
+            <button class="btn ${active ? "red" : "green"}" id="toggleRoomActiveBtn" ${disabled}>
+              ${active ? "Deactivate Room" : "Activate Room"}
+            </button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>1. Choose Clock Type</h2>
+
+          <div class="option-group">
+            <label class="radio-card ${disabledClass}">
+              <input type="radio" name="clockType" value="digital" ${state.clockType === "digital" ? "checked" : ""} ${disabled}>
+
+              <div>
+                <strong>Digital Clock</strong>
+                <span>Digital Clock</span>
+              </div>
+            </label>
+
+            <label class="radio-card ${disabledClass}">
+              <input type="radio" name="clockType" value="analog" ${state.clockType === "analog" ? "checked" : ""} ${disabled}>
+
+              <div>
+                <strong>Analog Clock</strong>
+                <span>Analog Clock</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>2. Choose Display Mode</h2>
+
+          <div class="option-group">
+            <label class="radio-card ${disabledClass}">
+              <input type="radio" name="displayMode" value="clock" ${state.displayMode === "clock" ? "checked" : ""} ${disabled}>
+
+              <div>
+                <strong>Clock Only</strong>
+                <span>Shows the selected clock full screen.</span>
+              </div>
+            </label>
+
+            <label class="radio-card ${disabledClass}">
+              <input type="radio" name="displayMode" value="combo" ${state.displayMode === "combo" ? "checked" : ""} ${disabled}>
+
+              <div>
+                <strong>Clock + Timer</strong>
+                <span>Shows the selected clock with count up or count down below it.</span>
+              </div>
+            </label>
+
+            <label class="radio-card ${disabledClass}">
+              <input type="radio" name="displayMode" value="timer" ${state.displayMode === "timer" ? "checked" : ""} ${disabled}>
+
+              <div>
+                <strong>Timer Only</strong>
+                <span>Shows count up or count down full screen.</span>
+              </div>
+            </label>
+
+            <label class="radio-card ${disabledClass}">
+              <input type="radio" name="displayMode" value="venue" ${state.displayMode === "venue" ? "checked" : ""} ${disabled}>
+
+              <div>
+                <strong>Venue Name</strong>
+                <span>Shows the venue image full screen.</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>3. Timer Settings</h2>
+
+          <div class="option-group">
+            <label class="radio-card ${disabledClass}">
+              <input type="radio" name="timerType" value="countdown" ${state.timerType === "countdown" ? "checked" : ""} ${disabled}>
+
+              <div>
+                <strong>Count Down</strong>
+                <span>Counts down from the time you choose.</span>
+              </div>
+            </label>
+
+            <label class="radio-card ${disabledClass}">
+              <input type="radio" name="timerType" value="countup" ${state.timerType === "countup" ? "checked" : ""} ${disabled}>
+
+              <div>
+                <strong>Count Up</strong>
+                <span>Counts up from zero.</span>
+              </div>
+            </label>
+          </div>
+
+          <div class="form-row">
+            <label class="small-label">
+              Minutes
+              <input id="minutesInput" type="number" min="0" value="${countdownMinutes}" ${disabled}>
+            </label>
+
+            <label class="small-label">
+              Seconds
+              <input id="secondsInput" type="number" min="0" max="59" value="${countdownSeconds}" ${disabled}>
+            </label>
+
+            <label class="small-label">
+              Current Timer
+              <input id="currentTimerInput" type="text" value="${formatTimer(getTimerSeconds(state))}" readonly>
+            </label>
+          </div>
+
+          <div class="button-row">
+            <button class="btn" id="applyTimeBtn" ${disabled}>Apply Time</button>
+            <button class="btn green" id="startPauseBtn" ${disabled}>${state.timerRunning ? "Pause" : "Start"}</button>
+            <button class="btn secondary" id="resetBtn" ${disabled}>Reset</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>4. Screen Text</h2>
+
+          <textarea id="messageInput" placeholder="Type words to show on the view screen..." ${disabled}>${state.message || ""}</textarea>
+
+          <div class="button-row">
+            <button class="btn ${state.messageVisible ? "green" : "red"}" id="showHideBtn" ${disabled}>
+              ${state.messageVisible ? "Hide" : "Show"}
+            </button>
+
+            <button class="btn secondary" id="clearTextBtn" ${disabled}>Clear Text</button>
+          </div>
+
+          <div class="status-pill">
+            <span class="status-dot"></span>
+
+            <span>
+              ${state.messageVisible ? "Text is showing. The clock or timer will shrink and move higher." : "Text is hidden. The clock or timer is full screen."}
+            </span>
+          </div>
+        </div>
+      ` : "";
 
       document.getElementById("app").innerHTML = `
         <main class="control-page">
@@ -1552,12 +1780,12 @@
                 <h1>Remote Clock Control</h1>
 
                 <p>
-                  Admin can change settings and activate/deactivate the room. Viewer accounts only join a room and see its feed.
+                  Admin can change settings and activate/deactivate rooms. Select a room code to show the controls.
                 </p>
               </div>
 
               <div>
-                <a class="open-view" href="${getViewURL()}" target="_blank">Open View Page</a>
+                ${inRoom ? `<a class="open-view" href="${getViewURL()}" target="_blank">Open View Page</a>` : ""}
 
                 <div class="button-row" style="justify-content: flex-end;">
                   <span class="role-pill">${getRole().toUpperCase()} MODE</span>
@@ -1571,7 +1799,11 @@
                 <h2>Room Code</h2>
 
                 <p>This connects your control page to your display page. Use the same room on both pages.</p>
-                <p style="margin-top: 8px;">Current room: <strong style="color: white;">${escapeHTML(getRoom())}</strong></p>
+
+                <p style="margin-top: 8px;">
+                  Current room:
+                  <strong style="color: white;">${inRoom ? escapeHTML(getRoom()) : "None selected"}</strong>
+                </p>
 
                 <div class="form-row">
                   <label class="small-label">
@@ -1586,169 +1818,17 @@
 
                   <label class="small-label">
                     View Link
-                    <input type="text" value="${escapeHTML(getViewURL())}" readonly>
+                    <input type="text" value="${inRoom ? escapeHTML(getViewURL()) : ""}" readonly>
                   </label>
                 </div>
 
                 <div class="button-row">
                   <button class="btn" id="setRoomBtn">Use This Room</button>
-                  <button class="btn secondary" id="copyViewBtn">Copy View Link</button>
+                  ${inRoom ? `<button class="btn secondary" id="copyViewBtn">Copy View Link</button>` : ""}
                 </div>
               </div>
 
-              <div class="card full">
-                <h2>Room Status</h2>
-
-                <p>
-                  When the room is active, viewers can join and see the feed. When it is deactivated, viewers will only see a room-not-active message.
-                </p>
-
-                <div class="button-row">
-                  <span class="active-pill ${active ? "on" : "off"}">
-                    <span class="status-dot ${active ? "" : "red"}"></span>
-                    ${active ? "ROOM ACTIVE" : "ROOM DEACTIVATED"}
-                  </span>
-
-                  <button class="btn ${active ? "red" : "green"}" id="toggleRoomActiveBtn" ${disabled}>
-                    ${active ? "Deactivate Room" : "Activate Room"}
-                  </button>
-                </div>
-              </div>
-
-              <div class="card">
-                <h2>1. Choose Clock Type</h2>
-
-                <div class="option-group">
-                  <label class="radio-card ${disabledClass}">
-                    <input type="radio" name="clockType" value="digital" ${state.clockType === "digital" ? "checked" : ""} ${disabled}>
-
-                    <div>
-                      <strong>Digital Clock</strong>
-                      <span>Digital Clock</span>
-                    </div>
-                  </label>
-
-                  <label class="radio-card ${disabledClass}">
-                    <input type="radio" name="clockType" value="analog" ${state.clockType === "analog" ? "checked" : ""} ${disabled}>
-
-                    <div>
-                      <strong>Analog Clock</strong>
-                      <span>Analog Clock</span>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              <div class="card">
-                <h2>2. Choose Display Mode</h2>
-
-                <div class="option-group">
-                  <label class="radio-card ${disabledClass}">
-                    <input type="radio" name="displayMode" value="clock" ${state.displayMode === "clock" ? "checked" : ""} ${disabled}>
-
-                    <div>
-                      <strong>Clock Only</strong>
-                      <span>Shows the selected clock full screen.</span>
-                    </div>
-                  </label>
-
-                  <label class="radio-card ${disabledClass}">
-                    <input type="radio" name="displayMode" value="combo" ${state.displayMode === "combo" ? "checked" : ""} ${disabled}>
-
-                    <div>
-                      <strong>Clock + Timer</strong>
-                      <span>Shows the selected clock with count up or count down below it.</span>
-                    </div>
-                  </label>
-
-                  <label class="radio-card ${disabledClass}">
-                    <input type="radio" name="displayMode" value="timer" ${state.displayMode === "timer" ? "checked" : ""} ${disabled}>
-
-                    <div>
-                      <strong>Timer Only</strong>
-                      <span>Shows count up or count down full screen.</span>
-                    </div>
-                  </label>
-
-                  <label class="radio-card ${disabledClass}">
-                    <input type="radio" name="displayMode" value="venue" ${state.displayMode === "venue" ? "checked" : ""} ${disabled}>
-
-                    <div>
-                      <strong>Venue Name</strong>
-                      <span>Shows the venue image full screen.</span>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              <div class="card">
-                <h2>3. Timer Settings</h2>
-
-                <div class="option-group">
-                  <label class="radio-card ${disabledClass}">
-                    <input type="radio" name="timerType" value="countdown" ${state.timerType === "countdown" ? "checked" : ""} ${disabled}>
-
-                    <div>
-                      <strong>Count Down</strong>
-                      <span>Counts down from the time you choose.</span>
-                    </div>
-                  </label>
-
-                  <label class="radio-card ${disabledClass}">
-                    <input type="radio" name="timerType" value="countup" ${state.timerType === "countup" ? "checked" : ""} ${disabled}>
-
-                    <div>
-                      <strong>Count Up</strong>
-                      <span>Counts up from zero.</span>
-                    </div>
-                  </label>
-                </div>
-
-                <div class="form-row">
-                  <label class="small-label">
-                    Minutes
-                    <input id="minutesInput" type="number" min="0" value="${countdownMinutes}" ${disabled}>
-                  </label>
-
-                  <label class="small-label">
-                    Seconds
-                    <input id="secondsInput" type="number" min="0" max="59" value="${countdownSeconds}" ${disabled}>
-                  </label>
-
-                  <label class="small-label">
-                    Current Timer
-                    <input id="currentTimerInput" type="text" value="${formatTimer(getTimerSeconds(state))}" readonly>
-                  </label>
-                </div>
-
-                <div class="button-row">
-                  <button class="btn" id="applyTimeBtn" ${disabled}>Apply Time</button>
-                  <button class="btn green" id="startPauseBtn" ${disabled}>${state.timerRunning ? "Pause" : "Start"}</button>
-                  <button class="btn secondary" id="resetBtn" ${disabled}>Reset</button>
-                </div>
-              </div>
-
-              <div class="card">
-                <h2>4. Screen Text</h2>
-
-                <textarea id="messageInput" placeholder="Type words to show on the view screen..." ${disabled}>${state.message || ""}</textarea>
-
-                <div class="button-row">
-                  <button class="btn ${state.messageVisible ? "green" : "red"}" id="showHideBtn" ${disabled}>
-                    ${state.messageVisible ? "Hide" : "Show"}
-                  </button>
-
-                  <button class="btn secondary" id="clearTextBtn" ${disabled}>Clear Text</button>
-                </div>
-
-                <div class="status-pill">
-                  <span class="status-dot"></span>
-
-                  <span>
-                    ${state.messageVisible ? "Text is showing. The clock or timer will shrink and move higher." : "Text is hidden. The clock or timer is full screen."}
-                  </span>
-                </div>
-              </div>
+              ${controlsHTML}
 
               <div class="card full">
                 <h2>Existing Rooms</h2>
@@ -1764,23 +1844,35 @@
     }
 
     function attachControlEvents() {
-      document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
+      const logoutBtn = document.getElementById("logoutBtn");
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", () => {
+          localStorage.removeItem("remote_clock_room");
+          signOut(auth);
+        });
+      }
 
-      document.getElementById("setRoomBtn").addEventListener("click", () => {
-        const roomCode = document.getElementById("roomInput").value.trim();
+      const setRoomBtn = document.getElementById("setRoomBtn");
+      if (setRoomBtn) {
+        setRoomBtn.addEventListener("click", () => {
+          const roomCode = document.getElementById("roomInput").value.trim();
 
-        if (!roomCode) {
-          alert("Please enter a room code.");
-          return;
-        }
+          if (!roomCode) {
+            alert("Please enter a room code.");
+            return;
+          }
 
-        setRoom(roomCode);
-      });
+          setRoom(roomCode);
+        });
+      }
 
-      document.getElementById("copyViewBtn").addEventListener("click", async () => {
-        await navigator.clipboard.writeText(getViewURL());
-        alert("View link copied.");
-      });
+      const copyViewBtn = document.getElementById("copyViewBtn");
+      if (copyViewBtn) {
+        copyViewBtn.addEventListener("click", async () => {
+          await navigator.clipboard.writeText(getViewURL());
+          alert("View link copied.");
+        });
+      }
 
       document.querySelectorAll(".close-room-btn").forEach(button => {
         button.addEventListener("click", () => {
@@ -1796,92 +1888,121 @@
         });
       });
 
-      if (!canWrite()) {
+      if (!canWrite() || !hasCurrentRoom()) {
         return;
       }
 
-      document.getElementById("toggleRoomActiveBtn").addEventListener("click", () => {
-        const shouldActivate = currentState.roomActive === false;
+      const toggleRoomActiveBtn = document.getElementById("toggleRoomActiveBtn");
+      if (toggleRoomActiveBtn) {
+        toggleRoomActiveBtn.addEventListener("click", () => {
+          const shouldActivate = currentState.roomActive === false;
 
-        saveState({
-          roomActive: shouldActivate,
-          deactivatedAt: shouldActivate ? null : Date.now()
+          saveState({
+            roomActive: shouldActivate,
+            deactivatedAt: shouldActivate ? null : Date.now()
+          });
+        });
+      }
+
+      document.querySelectorAll('input[name="clockType"]').forEach(input => {
+        input.addEventListener("change", async () => {
+          await saveState({ clockType: input.value });
+          renderControlPage();
         });
       });
 
-      document.querySelectorAll('input[name="clockType"]').forEach(input => {
-        input.addEventListener("change", () => saveState({ clockType: input.value }));
-      });
-
       document.querySelectorAll('input[name="displayMode"]').forEach(input => {
-        input.addEventListener("change", () => saveState({ displayMode: input.value }));
+        input.addEventListener("change", async () => {
+          await saveState({ displayMode: input.value });
+          renderControlPage();
+        });
       });
 
       document.querySelectorAll('input[name="timerType"]').forEach(input => {
-        input.addEventListener("change", () => {
-          saveState({
+        input.addEventListener("change", async () => {
+          await saveState({
             timerType: input.value,
             timerRunning: false,
             timerPausedElapsed: 0,
             timerStartedAt: null
           });
+
+          renderControlPage();
         });
       });
 
-      document.getElementById("applyTimeBtn").addEventListener("click", () => {
-        const minutes = Math.max(0, Number(document.getElementById("minutesInput").value) || 0);
-        const seconds = Math.min(59, Math.max(0, Number(document.getElementById("secondsInput").value) || 0));
+      const applyTimeBtn = document.getElementById("applyTimeBtn");
+      if (applyTimeBtn) {
+        applyTimeBtn.addEventListener("click", () => {
+          const minutes = Math.max(0, Number(document.getElementById("minutesInput").value) || 0);
+          const seconds = Math.min(59, Math.max(0, Number(document.getElementById("secondsInput").value) || 0));
 
-        saveState({
-          countdownSeconds: minutes * 60 + seconds,
-          timerRunning: false,
-          timerPausedElapsed: 0,
-          timerStartedAt: null
-        });
-      });
-
-      document.getElementById("startPauseBtn").addEventListener("click", () => {
-        if (currentState.timerRunning) {
           saveState({
+            countdownSeconds: minutes * 60 + seconds,
             timerRunning: false,
-            timerPausedElapsed: getElapsedSeconds(currentState),
+            timerPausedElapsed: 0,
             timerStartedAt: null
           });
-        } else {
+        });
+      }
+
+      const startPauseBtn = document.getElementById("startPauseBtn");
+      if (startPauseBtn) {
+        startPauseBtn.addEventListener("click", () => {
+          if (currentState.timerRunning) {
+            saveState({
+              timerRunning: false,
+              timerPausedElapsed: getElapsedSeconds(currentState),
+              timerStartedAt: null
+            });
+          } else {
+            saveState({
+              timerRunning: true,
+              timerStartedAt: Date.now()
+            });
+          }
+        });
+      }
+
+      const resetBtn = document.getElementById("resetBtn");
+      if (resetBtn) {
+        resetBtn.addEventListener("click", () => {
           saveState({
-            timerRunning: true,
-            timerStartedAt: Date.now()
+            timerRunning: false,
+            timerPausedElapsed: 0,
+            timerStartedAt: null
           });
-        }
-      });
-
-      document.getElementById("resetBtn").addEventListener("click", () => {
-        saveState({
-          timerRunning: false,
-          timerPausedElapsed: 0,
-          timerStartedAt: null
         });
-      });
+      }
 
-      document.getElementById("messageInput").addEventListener("input", event => {
-        currentState.message = event.target.value;
-      });
-
-      document.getElementById("showHideBtn").addEventListener("click", () => {
-        const text = document.getElementById("messageInput").value;
-
-        saveState({
-          message: text,
-          messageVisible: !currentState.messageVisible
+      const messageInput = document.getElementById("messageInput");
+      if (messageInput) {
+        messageInput.addEventListener("input", event => {
+          currentState.message = event.target.value;
         });
-      });
+      }
 
-      document.getElementById("clearTextBtn").addEventListener("click", () => {
-        saveState({
-          message: "",
-          messageVisible: false
+      const showHideBtn = document.getElementById("showHideBtn");
+      if (showHideBtn) {
+        showHideBtn.addEventListener("click", () => {
+          const text = document.getElementById("messageInput").value;
+
+          saveState({
+            message: text,
+            messageVisible: !currentState.messageVisible
+          });
         });
-      });
+      }
+
+      const clearTextBtn = document.getElementById("clearTextBtn");
+      if (clearTextBtn) {
+        clearTextBtn.addEventListener("click", () => {
+          saveState({
+            message: "",
+            messageVisible: false
+          });
+        });
+      }
     }
 
     function createAnalogClock() {
@@ -2068,6 +2189,13 @@
     }
 
     async function connectRoom() {
+      if (!getRoom()) {
+        currentRoomExists = false;
+        currentState = { ...defaultState };
+        renderControlPage();
+        return;
+      }
+
       if (unsubscribeRoom) {
         unsubscribeRoom();
       }
@@ -2090,6 +2218,11 @@
           currentState = { ...defaultState, ...(snapshot.val() || {}) };
         } else {
           currentState = { ...defaultState, roomActive: false };
+
+          if (!isViewPage() && getRole() === "admin") {
+            goToNoRoom();
+            return;
+          }
         }
 
         if (isViewPage()) {
@@ -2161,15 +2294,22 @@
             return;
           }
 
-          if (getRole() === "viewer" && !isViewPage()) {
+          if (getRole() === "viewer" && (!isViewPage() || !getRoom())) {
             clearViewerPresence();
             renderViewerJoinPage();
             return;
           }
 
-          await connectRoom();
           connectRoomsList();
           connectViewerPresenceList();
+
+          if (getRoom()) {
+            await connectRoom();
+          } else if (getRole() === "admin") {
+            currentRoomExists = false;
+            currentState = { ...defaultState };
+            renderControlPage();
+          }
         });
 
         setInterval(updateViewDisplays, 250);
