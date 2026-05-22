@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Bullis Theatre Clock</title>
 
   <style>
@@ -332,6 +333,41 @@
       border-radius: 16px;
       margin-top: 14px;
       display: none;
+    }
+
+    .room-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .room-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px 15px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid var(--line);
+    }
+
+    .room-name {
+      font-weight: 800;
+      color: white;
+    }
+
+    .room-status {
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
+    .room-status.active {
+      color: #bbf7d0;
+    }
+
+    .room-status.inactive {
+      color: #fecaca;
     }
 
     .view-page {
@@ -833,9 +869,11 @@
     let auth;
     let roomRef;
     let unsubscribeRoom = null;
+    let unsubscribeAllRooms = null;
     let currentUser = null;
     let currentState = { ...defaultState };
     let currentRoomExists = false;
+    let allRooms = {};
 
     function isViewPage() {
       return new URLSearchParams(window.location.search).get("view") === "1";
@@ -1035,6 +1073,41 @@
       }
 
       return "text-xlong";
+    }
+
+    function renderOtherRoomsHTML() {
+      const currentRoom = getRoom();
+
+      const roomNames = Object.keys(allRooms || {})
+        .filter(roomName => roomName !== currentRoom)
+        .sort();
+
+      if (roomNames.length === 0) {
+        return `<p>No other rooms are currently opened.</p>`;
+      }
+
+      return `
+        <div class="room-list">
+          ${roomNames.map(roomName => {
+            const roomState = allRooms[roomName]?.state || {};
+            const active = roomState.roomActive !== false;
+            const mode = roomState.displayMode || "clock";
+
+            return `
+              <div class="room-item">
+                <div>
+                  <div class="room-name">${escapeHTML(roomName)}</div>
+                  <div class="room-status">Mode: ${escapeHTML(mode)}</div>
+                </div>
+
+                <div class="room-status ${active ? "active" : "inactive"}">
+                  ${active ? "Active" : "Deactivated"}
+                </div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `;
     }
 
     function renderLoginPage(message = "") {
@@ -1275,11 +1348,12 @@
                 <h2>Room Code</h2>
 
                 <p>This connects your control page to your display page. Use the same room on both pages.</p>
+                <p style="margin-top: 8px;">Current room: <strong style="color: white;">${escapeHTML(getRoom())}</strong></p>
 
                 <div class="form-row">
                   <label class="small-label">
                     Room Code
-                    <input id="roomInput" type="text" value="${escapeHTML(getRoom())}">
+                    <input id="roomInput" type="text" value="" placeholder="Enter room code" autocomplete="off">
                   </label>
 
                   <label class="small-label">
@@ -1452,6 +1526,12 @@
                   </span>
                 </div>
               </div>
+
+              <div class="card full">
+                <h2>Other Rooms Currently Opened</h2>
+                <p>These are the other rooms saved in Firebase, not including the room you are currently controlling.</p>
+                ${renderOtherRoomsHTML()}
+              </div>
             </section>
           </div>
         </main>
@@ -1464,7 +1544,14 @@
       document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
 
       document.getElementById("setRoomBtn").addEventListener("click", () => {
-        setRoom(document.getElementById("roomInput").value);
+        const roomCode = document.getElementById("roomInput").value.trim();
+
+        if (!roomCode) {
+          alert("Please enter a room code.");
+          return;
+        }
+
+        setRoom(roomCode);
       });
 
       document.getElementById("copyViewBtn").addEventListener("click", async () => {
@@ -1723,6 +1810,24 @@
       });
     }
 
+    function connectRoomsList() {
+      if (unsubscribeAllRooms) {
+        unsubscribeAllRooms();
+      }
+
+      if (getRole() !== "admin") {
+        return;
+      }
+
+      unsubscribeAllRooms = onValue(ref(db, "rooms"), snapshot => {
+        allRooms = snapshot.val() || {};
+
+        if (!isViewPage() && getRole() === "admin" && !userIsTyping()) {
+          renderControlPage();
+        }
+      });
+    }
+
     async function startApp() {
       try {
         app = initializeApp(firebaseConfig);
@@ -1748,6 +1853,7 @@
           }
 
           await connectRoom();
+          connectRoomsList();
         });
 
         setInterval(updateViewDisplays, 250);
